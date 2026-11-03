@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ display_name }} - Hồ sơ{% endblock %}
+{% block content %}
+<div class="cover-header">
+    <div class="cover-banner" {% if profile_user.cover_image %}style="background-image: url('{{ profile_user.cover_image.url }}');"{% endif %}></div>
+    <div class="cover-avatar">
+        {% if profile_user.avatar %}
+            <img src="{{ profile_user.avatar.url }}" alt="{{ display_name }}">
+        {% else %}
+            {{ display_name|first|upper }}
+        {% endif %}
+    </div>
+</div>
+<div class="card">
+    <h1>{{ display_name }} {% if user.is_authenticated and user.role == "staff" %}<span class="pill">{{ profile_user.get_role_display }}</span>{% endif %}</h1>
+    {% if profile_user.bio %}<p>{{ profile_user.bio }}</p>{% endif %}
+    {% if user == profile_user %}<p>Email: {{ profile_user.email }}</p>{% endif %}
+    {% if profile_user.student_id %}<p>MSSV/CB: {{ profile_user.student_id }}</p>{% endif %}
+    {% if profile_user.class_name %}<p>Lớp: {{ profile_user.class_name }}</p>{% endif %}
+    <p>Tham gia: {{ profile_user.date_joined|date:"d/m/Y" }}</p>
+    {% if user == profile_user %}
+        <a class="btn" href="{% url 'accounts:profile_edit' %}">Chỉnh sửa hồ sơ</a>
+        <a class="btn btn-secondary" href="{% url 'interactions:saved' %}">Bài viết đã lưu</a>
+        <a class="btn btn-secondary" href="{% url 'interactions:following' %}">Đang theo dõi</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Thống kê hồ sơ</h2>
+    <div class="list-meta" style="font-size:14px;gap:4px 18px;">
+        <span>📝 {{ stats.forum_post_count }} bài viết diễn đàn</span>
+        <span>👥 {{ stats.group_post_count }} bài viết trong nhóm</span>
+        <span>💬 {{ stats.comment_count }} bình luận</span>
+        <span>🏷️ {{ stats.group_count }} nhóm đang tham gia</span>
+        {% if user == profile_user %}
+            <span><a class="author-link" href="{% url 'interactions:following' %}">🔔 Đã theo dõi: {{ stats.followed_post_count }} bài viết, {{ stats.followed_category_count }} chuyên mục</a></span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>Lịch sử hoạt động</h2>
+</div>
+{% for a in page_obj %}
+    <div class="list-card">
+        <div class="list-body">
+            <div class="list-meta">
+                <span class="badge">{{ a.type_label }}</span>
+                <span>· {{ a.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <h3 class="list-title"><a href="{{ a.url }}">{{ a.title }}</a></h3>
+        </div>
+    </div>
+{% empty %}
+    <div class="card">
+        <p>Chưa có hoạt động nào.</p>
+    </div>
+{% endfor %}
+{% include "_pagination.html" with noun="hoạt động" %}
+{% endblock %}

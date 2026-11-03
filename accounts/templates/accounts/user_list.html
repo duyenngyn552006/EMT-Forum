@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Quản lý tài khoản{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Quản lý tài khoản</h1>
+    <form method="get" class="search-bar" style="max-width:420px;margin-bottom:14px;">
+        <input type="text" name="q" placeholder="Tìm theo email..." value="{{ request.GET.q }}">
+        <button type="submit">Tìm</button>
+    </form>
+    <div class="table-responsive">
+    <table>
+        <thead>
+            <tr><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Hành động</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for u in users %}
+            <tr>
+                <td><a class="author-link" href="{{ u.get_absolute_url }}">{{ u.email }}</a></td>
+                <td>
+                    <form method="post" action="{% url 'accounts:assign_role' u.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <select name="role" onchange="if (confirm('Bạn có chắc chắn muốn đổi vai trò của người dùng này không?')) { this.form.submit(); } else { this.value = '{{ u.role }}'; }">
+                            {% for value, label in roles %}
+                                <option value="{{ value }}" {% if value == u.role %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </td>
+                <td>{% if u.is_active %}Hoạt động{% else %}Đã khóa{% endif %}</td>
+                <td>
+                    <form method="post" action="{% url 'accounts:toggle_lock_account' u.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        {% if u.is_active %}
+                            <input type="text" name="reason" placeholder="Lý do khóa" required>
+                            <button class="btn btn-sm btn-danger" type="submit">Khóa</button>
+                        {% else %}
+                            <button class="btn btn-sm" type="submit">Mở khóa</button>
+                        {% endif %}
+                    </form>
+                </td>
+                <td>
+                    <a class="btn btn-sm btn-secondary" href="{% url 'moderation:log_list' %}?user={{ u.pk }}">Lịch sử vi phạm</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% include "_pagination.html" with noun="tài khoản" %}
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "account/base_entrance.html" %}
+{% load allauth %}
+{% block head_title %}Tài khoản đã bị khóa{% endblock head_title %}
+{% block entrance %}
+    {% element h1 %}
+        Tài khoản đã bị khóa
+    {% endelement %}
+    {% if locked_user %}
+        {% element p %}
+            Tài khoản của bạn đã bị khóa từ {{ locked_user.locked_at|date:"H:i d/m/Y" }}
+            vì lý do: <strong>{{ locked_user.locked_reason }}</strong>
+        {% endelement %}
+        {% element p %}
+            Nếu bạn cho rằng đây là nhầm lẫn, vui lòng gửi kháng nghị để Giáo vụ Khoa xem xét.
+        {% endelement %}
+        {% url 'moderation:appeal_create' as appeal_url %}
+        {% element button href=appeal_url %}
+            Gửi kháng nghị
+        {% endelement %}
+    {% else %}
+        {% element p %}
+            Tài khoản này hiện đang bị khóa. Nếu bạn cho rằng đây là nhầm lẫn, vui lòng đăng nhập lại
+            để gửi kháng nghị.
+        {% endelement %}
+    {% endif %}
+{% endblock entrance %}

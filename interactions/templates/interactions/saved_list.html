@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Bài viết đã lưu{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Bài viết đã lưu</h1>
+</div>
+{% for row in rows %}
+<div class="list-card">
+    <div class="list-body">
+        <h3 class="list-title"><a href="{{ row.url }}">{{ row.label }}</a></h3>
+    </div>
+    <form method="post" action="{% url 'interactions:toggle_save' row.model_key row.object_id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'interactions:saved' %}">
+        <button class="btn btn-secondary" type="submit">Bỏ lưu</button>
+    </form>
+</div>
+{% empty %}
+<div class="card">
+    <p>Bạn chưa lưu bài viết nào. Mở một bài viết rồi bấm “🔖 Lưu”.</p>
+</div>
+{% endfor %}
+{% endblock %}
