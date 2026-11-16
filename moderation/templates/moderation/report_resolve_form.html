@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "moderation/base_moderation.html" %}
 {% block title %}Xử lý báo cáo{% endblock %}
-{% block content %}
+{% block mod_content %}
 <div class="card">
     <h1>Xử lý báo cáo #{{ report.pk }}</h1>
     <p>Nội dung: <span class="pill">{{ type_name }}</span>

@@ -1,0 +1,45 @@
+{# Thanh dieu huong Trung tam kiem duyet - chi hien voi Giao vu Khoa (cac trang dung no deu da gioi han quyen) #}
+<aside class="mod-side" aria-label="Trung tâm kiểm duyệt">
+    <div class="mod-side-head">
+        <p class="mod-side-title">Trung tâm kiểm duyệt</p>
+        <p class="mod-side-sub">{% if total_pending %}<strong>{{ total_pending }}</strong> việc đang chờ xử lý{% else %}Không có việc nào đang chờ{% endif %}</p>
+    </div>
+
+    <nav>
+        <a class="mod-side-link{% if active == 'dashboard' %} active{% endif %}" href="{% url 'dashboard:overview' %}"{% if active == 'dashboard' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Dashboard</span>
+        </a>
+
+        <p class="mod-side-label">Cần xử lý</p>
+        <a class="mod-side-link{% if active == 'reports' %} active{% endif %}" href="{% url 'moderation:report_list' %}"{% if active == 'reports' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            <span>Báo cáo vi phạm</span>
+            {% if counts.reports %}<span class="mod-side-count" aria-label="{{ counts.reports }} đang chờ">{{ counts.reports }}</span>{% endif %}
+        </a>
+        <a class="mod-side-link{% if active == 'content' %} active{% endif %}" href="{% url 'moderation:pending_content_list' %}"{% if active == 'content' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+            <span>Duyệt nội dung</span>
+            {% if counts.content %}<span class="mod-side-count" aria-label="{{ counts.content }} đang chờ">{{ counts.content }}</span>{% endif %}
+        </a>
+        <a class="mod-side-link{% if active == 'appeals' %} active{% endif %}" href="{% url 'moderation:appeal_list' %}"{% if active == 'appeals' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+            <span>Kháng nghị</span>
+            {% if counts.appeals %}<span class="mod-side-count" aria-label="{{ counts.appeals }} đang chờ">{{ counts.appeals }}</span>{% endif %}
+        </a>
+
+        <p class="mod-side-label">Công cụ</p>
+        <a class="mod-side-link{% if active == 'keywords' %} active{% endif %}" href="{% url 'moderation:keyword_list' %}"{% if active == 'keywords' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span>Từ khóa nhạy cảm</span>
+        </a>
+        <a class="mod-side-link{% if active == 'logs' %} active{% endif %}" href="{% url 'moderation:log_list' %}"{% if active == 'logs' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Nhật ký kiểm duyệt</span>
+        </a>
+        <a class="mod-side-link" href="{% url 'accounts:user_list' %}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Quản lý tài khoản</span>
+        </a>
+    </nav>
+</aside>

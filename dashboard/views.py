@@ -13,7 +13,8 @@ from config.mixins import ContentStatus
 from forum.models import ForumPost
 from groups.models import Group
 from interactions.models import Comment, Like
-from moderation.models import AccountAppeal, ModerationLog, Report
+from moderation.models import ModerationLog, Report
+from moderation.services import pending_counts
 
 from . import stats
 
@@ -159,10 +160,6 @@ def _moderation_stats(info):
         activity_rows.append({"actor": actors.get(user_id), "cells": cells, "total": sum(cells)})
     activity_rows.sort(key=lambda r: -r["total"])
 
-    pending_content = sum(
-        model.objects.filter(status=ContentStatus.PENDING_REVIEW).count() for model in (ForumPost, Announcement)
-    ) + Comment.objects.filter(status=Comment.Status.PENDING_REVIEW).count()
-
     return {
         "tiles": [
             {"label": "Báo cáo mới", "value": new_reports, "previous": prev_reports,
@@ -179,11 +176,7 @@ def _moderation_stats(info):
         "by_category": by_category,
         "activity_headers": ["Báo cáo đã xử lý"] + [label for _k, label, _a in _ACTIVITY_COLUMNS],
         "activity_rows": activity_rows,
-        "queue": {
-            "reports": Report.objects.filter(status__in=Report.OPEN_STATUSES).count(),
-            "content": pending_content,
-            "appeals": AccountAppeal.objects.filter(status=AccountAppeal.Status.PENDING).count(),
-        },
+        "queue": pending_counts(),
     }
 
 

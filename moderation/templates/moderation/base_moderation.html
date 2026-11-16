@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load moderation_tags %}
+{# Bo cuc chung cho cac trang quan tri cua module Kiem duyet: thanh dieu huong ben trai + noi dung ben phai #}
+{% block content %}
+<style>
+    .mod-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start; }
+    .mod-main > .card:first-child, .mod-main > .viz-root > .card:first-child { margin-top: 0; }
+
+    .mod-side { position: sticky; top: 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px 12px; }
+    .mod-side-head { background: #0f2747; color: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+    .mod-side-title { margin: 0; font-weight: 700; font-size: 15px; }
+    .mod-side-sub { margin: 2px 0 0; font-size: 12.5px; color: #c7d2e3; }
+    .mod-side-sub strong { color: #fff; }
+    .mod-side-label { margin: 14px 10px 6px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; }
+    .mod-side-link { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; color: #334155; text-decoration: none; font-size: 14.5px; }
+    .mod-side-link:hover { background: #f1f5f9; text-decoration: none; }
+    .mod-side-link.active { background: #e0ebfb; color: #0f2747; font-weight: 700; }
+    .mod-side-link svg { width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .mod-side-link span:first-of-type { flex: 1; }
+    .mod-side-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #dc2626; color: #fff; font-size: 12px; font-weight: 700; text-align: center; }
+
+    html[data-theme="dark"] .mod-side { background: #111a2e; border-color: #22304a; }
+    html[data-theme="dark"] .mod-side-head { background: #1b2c4d; }
+    html[data-theme="dark"] .mod-side-label { color: #8fa1bd; }
+    html[data-theme="dark"] .mod-side-link { color: #d5deeb; }
+    html[data-theme="dark"] .mod-side-link:hover { background: #17223a; }
+    html[data-theme="dark"] .mod-side-link.active { background: #1e3a66; color: #fff; }
+
+    /* Man hinh hep: thanh dieu huong thanh 1 hang nut cuon ngang o dau trang */
+    @media (max-width: 900px) {
+        .mod-layout { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+        .mod-side { position: static; padding: 10px; min-width: 0; }
+        .mod-side-head, .mod-side-label { display: none; }
+        .mod-side nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+        .mod-side-link { flex: 0 0 auto; white-space: nowrap; }
+    }
+</style>
+<div class="mod-layout">
+    {% moderation_sidebar %}
+    <div class="mod-main">
+        {% block mod_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
