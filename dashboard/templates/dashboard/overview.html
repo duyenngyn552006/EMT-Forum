@@ -64,6 +64,8 @@
     .stat-delta.flat, .stat-delta.new { color: var(--viz-text-2); }
     .stat-tile.needs-action { border-color: #f1c27d; background: #fffaf0; }
     .status-tag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: #fdecc8; color: #7a4a00; }
+    .dash-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+    .export-btn { margin-left: auto; }
     .role-table td:last-child, .role-table th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 
     /* Bieu do / bang */
@@ -93,22 +95,31 @@
 
 <div class="viz-root">
 <div class="card">
-    <h1 style="margin:0;">Dashboard tổng quan</h1>
-    <p class="stat-sub">Số liệu toàn hệ thống, chỉ Giáo vụ Khoa xem được.</p>
+    <div class="dash-head">
+        <div>
+            <h1 style="margin:0;">Dashboard tổng quan</h1>
+            <p class="stat-sub">Số liệu toàn hệ thống, chỉ Giáo vụ Khoa xem được.</p>
+        </div>
+        <nav class="seg-tabs" aria-label="Nhóm số liệu">
+            {% for key, text in tabs.items %}
+                <a href="?{{ current_query }}{% if key != 'overview' %}&tab={{ key }}{% endif %}"{% if key == tab %} aria-current="page"{% endif %}>{{ text }}</a>
+            {% endfor %}
+        </nav>
+    </div>
 </div>
 
 <div class="period-bar">
     <nav class="seg-tabs" aria-label="Loại kỳ thống kê">
         {% for key, text in period_labels.items %}
-            <a href="?period={{ key }}"{% if key == period %} aria-current="page"{% endif %}>{{ text }}</a>
+            <a href="?period={{ key }}{{ tab_suffix }}"{% if key == period %} aria-current="page"{% endif %}>{{ text }}</a>
         {% endfor %}
     </nav>
 
     <div class="period-nav">
-        <a class="nav-step" href="?{{ prev_query }}" aria-label="Kỳ trước" title="Kỳ trước">‹</a>
+        <a class="nav-step" href="?{{ prev_query }}{{ tab_suffix }}" aria-label="Kỳ trước" title="Kỳ trước">‹</a>
         <span class="period-label">{{ info.label }}</span>
         {% if next_query %}
-            <a class="nav-step" href="?{{ next_query }}" aria-label="Kỳ sau" title="Kỳ sau">›</a>
+            <a class="nav-step" href="?{{ next_query }}{{ tab_suffix }}" aria-label="Kỳ sau" title="Kỳ sau">›</a>
         {% else %}
             <span class="nav-step disabled" aria-disabled="true" title="Chưa tới kỳ sau">›</span>
         {% endif %}
@@ -117,6 +128,7 @@
 
     <form method="get" class="period-picker" id="periodPicker">
         <input type="hidden" name="period" value="{{ period }}">
+        {% if tab != "overview" %}<input type="hidden" name="tab" value="{{ tab }}">{% endif %}
         {% if period == "week" %}
             <label class="sr-only" for="pickDate">Chọn 1 ngày bất kỳ trong tuần</label>
             <input type="date" id="pickDate" name="date" value="{{ info.start|date:'Y-m-d' }}" title="Chọn 1 ngày bất kỳ trong tuần muốn xem">
@@ -134,8 +146,13 @@
         {% endif %}
         <noscript><button class="btn btn-sm" type="submit">Xem</button></noscript>
     </form>
-    {% if not info.is_current %}<a class="period-today" href="?period={{ period }}"><span class="icon" aria-hidden="true">↺</span>Về kỳ hiện tại</a>{% endif %}
+    {% if not info.is_current %}<a class="period-today" href="?period={{ period }}{{ tab_suffix }}"><span class="icon" aria-hidden="true">↺</span>Về kỳ hiện tại</a>{% endif %}
+    <a class="period-today export-btn" href="{% url 'dashboard:export_csv' %}?{{ current_query }}" title="Tải số liệu kỳ đang xem về máy, mở bằng Excel"><span class="icon" aria-hidden="true">⬇</span>Xuất Excel</a>
 </div>
+
+{% if tab == "moderation" %}
+{% include "dashboard/_moderation_tab.html" %}
+{% else %}
 
 <div class="stat-grid">
     {% for m in metrics %}
@@ -219,6 +236,7 @@
         </table>
     </div>
 </div>
+{% endif %}
 </div>
 
 <script>

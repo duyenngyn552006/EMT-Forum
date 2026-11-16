@@ -6,9 +6,23 @@ from .models import AccountAppeal, Report, SensitiveKeyword
 class ReportForm(forms.ModelForm):
     class Meta:
         model = Report
-        fields = ["reason"]
-        labels = {"reason": "Lý do báo cáo"}
-        widgets = {"reason": forms.Textarea(attrs={"rows": 3})}
+        fields = ["category", "reason"]
+        labels = {"category": "Loại vi phạm", "reason": "Mô tả thêm"}
+        widgets = {
+            "category": forms.RadioSelect,
+            "reason": forms.Textarea(attrs={"rows": 3, "placeholder": "Bắt buộc khi chọn \"Khác\""}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Khong chon san "Khac" (gia tri mac dinh cua model) - bat nguoi dung chu dong chon loai
+        self.fields["category"].initial = None
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("category") == Report.Category.OTHER and not (cleaned.get("reason") or "").strip():
+            self.add_error("reason", "Vui lòng mô tả lý do khi chọn \"Khác\".")
+        return cleaned
 
 
 class ReportResolveForm(forms.Form):
@@ -17,7 +31,7 @@ class ReportResolveForm(forms.Form):
         ("hide", "Ẩn nội dung"),
         ("delete", "Xóa nội dung"),
     ]
-    action = forms.ChoiceField(choices=ACTION_CHOICES)
+    action = forms.ChoiceField(choices=ACTION_CHOICES, label="Hướng xử lý")
     resolution_note = forms.CharField(widget=forms.Textarea, required=True, label="Ghi chú xử lý")
 
 

@@ -3,8 +3,26 @@
 {% block content %}
 <div class="card">
     <h1>Xử lý báo cáo #{{ report.pk }}</h1>
-    <p>Lý do báo cáo: {{ report.reason }}</p>
-    <p>Nội dung: {{ report.content_object }}</p>
+    <p>Nội dung: <span class="pill">{{ type_name }}</span>
+        {% if object_url %}<a href="{{ object_url }}" target="_blank">{{ object_label }}</a>{% else %}{{ object_label }}{% endif %}
+    </p>
+    <p><strong>{{ reporter_count }} người báo cáo</strong> ({{ related_reports|length }} báo cáo đang chờ):</p>
+    <div class="table-responsive">
+        <table>
+            <thead><tr><th>Người báo cáo</th><th>Loại vi phạm</th><th>Mô tả thêm</th><th>Thời gian</th></tr></thead>
+            <tbody>
+            {% for r in related_reports %}
+                <tr>
+                    <td>{{ r.reporter }}</td>
+                    <td>{{ r.get_category_display }}</td>
+                    <td>{{ r.reason|default:"—" }}</td>
+                    <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="helptext" style="margin:12px 0;">Kết quả xử lý áp dụng cho tất cả báo cáo trên. Hệ thống tự gửi thông báo kết quả cho người báo cáo, và cho tác giả nếu nội dung bị ẩn hoặc xóa.</p>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}

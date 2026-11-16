@@ -110,59 +110,218 @@ class SensitiveKeywordDeleteView(_StaffRequiredMixin, DeleteView):
         return super().form_valid(form)
 
 
+def _content_url(obj):
+    """Duong dan toi noi dung bi bao cao. Comment khong co trang rieng -> tro ve noi dung
+    cha va nhay toi dung binh luan (id comment-bubble-<pk> trong _interactions.html)."""
+    if obj is None:
+        return ""
+    if hasattr(obj, "get_absolute_url"):
+        return obj.get_absolute_url()
+    parent = getattr(obj, "content_object", None)
+    if parent is not None and hasattr(parent, "get_absolute_url"):
+        return f"{parent.get_absolute_url()}#comment-bubble-{obj.pk}"
+    return ""
+
+
+# Ten tieng Viet cua loai noi dung (content_type.name mac dinh la tieng Anh, vd "forum post")
+_TYPE_NAMES = {
+    "forumpost": "Bài viết diễn đàn",
+    "announcement": "Thông báo",
+    "grouppost": "Bài viết trong nhóm",
+    "comment": "Bình luận",
+}
+
+
+def _type_name(content_type):
+    return _TYPE_NAMES.get(content_type.model, content_type.name)
+
+
+def _content_label(obj, limit=80):
+    """Ten ngan gon cua noi dung de hien thi/gui thong bao: tieu de neu co, khong thi trich noi dung."""
+    if obj is None:
+        return "(nội dung đã bị xóa)"
+    text = getattr(obj, "title", "") or getattr(obj, "body", "") or str(obj)
+    text = " ".join(str(text).split())
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
 @login_required
 def create_report(request, model_key, object_id):
     content_type, obj = resolve_target(model_key, object_id)
+    back_url = _content_url(obj) or "/"
+
+    # M2 - chong bao cao trung: moi nguoi chi co 1 bao cao dang mo cho cung 1 noi dung
+    already_reported = Report.objects.filter(
+        reporter=request.user, content_type=content_type, object_id=obj.pk, status__in=Report.OPEN_STATUSES,
+    ).exists()
+    if already_reported:
+        messages.info(request, "Bạn đã báo cáo nội dung này, Giáo vụ Khoa đang xem xét.")
+        return redirect(back_url)
+
     if request.method == "POST":
         form = ReportForm(request.POST)
         if form.is_valid():
             Report.objects.create(
                 reporter=request.user, content_type=content_type, object_id=obj.pk,
+                category=form.cleaned_data["category"],
                 reason=form.cleaned_data["reason"],
             )
             messages.success(request, "Đã gửi báo cáo vi phạm, Giáo vụ Khoa sẽ xem xét.")
-            return redirect(getattr(obj, "get_absolute_url", lambda: "/")())
+            return redirect(back_url)
     else:
         form = ReportForm()
-    return render(request, "moderation/report_form.html", {"form": form, "object": obj})
+    return render(
+        request, "moderation/report_form.html",
+        {"form": form, "object": obj, "object_label": _content_label(obj), "back_url": back_url},
+    )
+
+
+def _open_report_groups(category=""):
+    """M2 - gop cac bao cao dang mo theo noi dung: moi noi dung 1 nhom, kem so nguoi bao cao
+    va cac loai vi pham duoc chon. Nhom co bao cao moi nhat dung truoc."""
+    reports = (
+        Report.objects.filter(status__in=Report.OPEN_STATUSES)
+        .select_related("reporter", "content_type")
+        .order_by("-created_at")
+    )
+    groups = {}
+    for report in reports:
+        key = (report.content_type_id, report.object_id)
+        if key not in groups:
+            groups[key] = {"reports": [], "categories": {}}
+        group = groups[key]
+        group["reports"].append(report)
+        label = report.get_category_display()
+        group["categories"][label] = group["categories"].get(label, 0) + 1
+
+    result = []
+    for group in groups.values():
+        if category and not any(r.category == category for r in group["reports"]):
+            continue
+        latest = group["reports"][0]
+        obj = latest.content_object
+        result.append({
+            "latest": latest,
+            "reports": group["reports"],
+            "reporter_count": len({r.reporter_id for r in group["reports"]}),
+            "categories": sorted(group["categories"].items(), key=lambda item: -item[1]),
+            "object": obj,
+            "label": _content_label(obj),
+            "url": _content_url(obj),
+            "type_name": _type_name(latest.content_type),
+        })
+    # Noi dung bi nhieu nguoi bao cao len dau de Giao vu xu ly truoc
+    result.sort(key=lambda g: (-g["reporter_count"], -g["latest"].created_at.timestamp()))
+    return result
 
 
 @user_passes_test(_is_staff, login_url="home")
 def report_list(request):
-    reports = Report.objects.filter(status__in=[Report.Status.PENDING, Report.Status.REVIEWING]).select_related("reporter")
-    return render(request, "moderation/report_list.html", {"reports": reports})
+    category = request.GET.get("category", "")
+    if category not in Report.Category.values:
+        category = ""
+    groups = _open_report_groups(category)
+    return render(
+        request, "moderation/report_list.html",
+        {
+            "groups": groups,
+            "category_choices": Report.Category.choices,
+            "current_category": category,
+            "open_count": Report.objects.filter(status__in=Report.OPEN_STATUSES).count(),
+        },
+    )
+
+
+_RESULT_TEXT = {
+    "dismiss": "không phát hiện vi phạm, nội dung được giữ nguyên",
+    "hide": "nội dung đã bị ẩn",
+    "delete": "nội dung đã bị xóa",
+}
+
+
+def _notify_report_result(actor, obj, reports, action, note):
+    """M3 - bao ket qua xu ly cho tung nguoi bao cao va cho tac gia noi dung (neu bi an/xoa)."""
+    label = _content_label(obj, limit=60)
+    # Noi dung bi an/xoa thi nguoi khac khong xem duoc nua -> khong gan lien ket
+    link_target = obj if action == "dismiss" else None
+    if link_target is not None and not hasattr(link_target, "get_absolute_url"):
+        link_target = getattr(link_target, "content_object", None)
+
+    notified = set()
+    for report in reports:
+        if report.reporter_id in notified:
+            continue
+        notified.add(report.reporter_id)
+        notify(
+            recipient=report.reporter, verb=Notification.Verb.MODERATION, actor=actor,
+            message=f"Báo cáo của bạn về \"{label}\" đã được xử lý: {_RESULT_TEXT[action]}."[:255],
+            content_object=link_target,
+        )
+
+    author = getattr(obj, "author", None)
+    if action != "dismiss" and author is not None:
+        verb_text = "bị ẩn" if action == "hide" else "bị xóa"
+        categories = ", ".join(sorted({r.get_category_display() for r in reports}))
+        notify(
+            recipient=author, verb=Notification.Verb.MODERATION, actor=actor,
+            message=f"Nội dung \"{label}\" của bạn đã {verb_text} do vi phạm ({categories}). Ghi chú: {note}"[:255],
+        )
 
 
 @user_passes_test(_is_staff, login_url="home")
 def report_resolve(request, pk):
     report = get_object_or_404(Report, pk=pk)
+    # M2 - xu ly 1 lan cho moi bao cao dang mo cua cung noi dung
+    related_reports = list(
+        Report.objects.filter(
+            content_type=report.content_type, object_id=report.object_id, status__in=Report.OPEN_STATUSES,
+        ).select_related("reporter").order_by("-created_at")
+    ) or [report]
+    obj = report.content_object
+
     if request.method == "POST":
         form = ReportResolveForm(request.POST)
         if form.is_valid():
             action = form.cleaned_data["action"]
             note = form.cleaned_data["resolution_note"]
-            obj = report.content_object
 
             if action == "hide" and obj is not None and hasattr(obj, "status"):
-                obj.status = ContentStatus.HIDDEN if hasattr(ContentStatus, "HIDDEN") else obj.status
-                obj.status = "hidden"
+                obj.status = ContentStatus.HIDDEN
                 obj.save(update_fields=["status"])
-                log_action(actor=request.user, action=ModerationLog.Action.HIDE, reason=note, content_object=obj)
+                log_action(actor=request.user, action=ModerationLog.Action.HIDE, reason=note,
+                           target_user=getattr(obj, "author", None), content_object=obj)
             elif action == "delete" and obj is not None and hasattr(obj, "status"):
-                obj.status = "removed"
+                obj.status = ContentStatus.REMOVED
                 obj.save(update_fields=["status"])
-                log_action(actor=request.user, action=ModerationLog.Action.DELETE, reason=note, content_object=obj)
+                log_action(actor=request.user, action=ModerationLog.Action.DELETE, reason=note,
+                           target_user=getattr(obj, "author", None), content_object=obj)
 
-            report.status = Report.Status.RESOLVED if action != "dismiss" else Report.Status.DISMISSED
-            report.handled_by = request.user
-            report.resolution_note = note
-            report.handled_at = timezone.now()
-            report.save()
-            messages.success(request, "Đã xử lý báo cáo.")
+            now = timezone.now()
+            new_status = Report.Status.RESOLVED if action != "dismiss" else Report.Status.DISMISSED
+            for item in related_reports:
+                item.status = new_status
+                item.handled_by = request.user
+                item.resolution_note = note
+                item.handled_at = now
+                item.save(update_fields=["status", "handled_by", "resolution_note", "handled_at"])
+
+            _notify_report_result(request.user, obj, related_reports, action, note)
+            count = len(related_reports)
+            messages.success(
+                request, "Đã xử lý báo cáo." if count == 1 else f"Đã xử lý {count} báo cáo của cùng nội dung."
+            )
             return redirect("moderation:report_list")
     else:
         form = ReportResolveForm()
-    return render(request, "moderation/report_resolve_form.html", {"form": form, "report": report})
+    return render(
+        request, "moderation/report_resolve_form.html",
+        {
+            "form": form, "report": report, "related_reports": related_reports,
+            "type_name": _type_name(report.content_type),
+            "object": obj, "object_label": _content_label(obj), "object_url": _content_url(obj),
+            "reporter_count": len({r.reporter_id for r in related_reports}),
+        },
+    )
 
 
 @user_passes_test(_is_staff, login_url="home")

@@ -1,17 +1,62 @@
 {% extends "base.html" %}
 {% block title %}Báo cáo vi phạm{% endblock %}
 {% block content %}
+<style>
+    .report-group { border: 1px solid #e0e0e0; border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
+    .report-group.hot { border-color: #f1c27d; }
+    .report-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+    .report-head h3 { margin: 0; font-size: 16px; }
+    .report-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0; font-size: 13px; color: #64748b; }
+    .reason-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #fde8e8; color: #9b1c1c; }
+    .report-reasons { list-style: none; margin: 6px 0 0; padding: 0; font-size: 13.5px; }
+    .report-reasons li { padding: 4px 0; border-top: 1px dashed #e5e7eb; }
+    .report-reasons li:first-child { border-top: none; }
+    .report-count { font-weight: 700; }
+    html[data-theme="dark"] .report-group { border-color: #2c3a55; }
+    html[data-theme="dark"] .report-group.hot { border-color: #a16207; }
+    html[data-theme="dark"] .report-meta { color: #b7c3d6; }
+    html[data-theme="dark"] .reason-chip { background: #3d1518; color: #fca5a5; }
+    html[data-theme="dark"] .report-reasons li { border-top-color: #222e45; }
+</style>
 <div class="card">
     <h1>Báo cáo vi phạm đang chờ xử lý</h1>
-    {% for r in reports %}
-    <div class="card">
-        <p>Người báo cáo: {{ r.reporter }} · {{ r.created_at|date:"d/m/Y H:i" }}</p>
-        <p>Nội dung bị báo cáo: {{ r.content_type.name }} #{{ r.object_id }}</p>
-        <p>Lý do: {{ r.reason }}</p>
-        <a class="btn" href="{% url 'moderation:report_resolve' r.pk %}">Xử lý</a>
+    <p style="margin-top:4px;">{{ open_count }} báo cáo, gộp thành {{ groups|length }} nội dung{% if current_category %} (đang lọc){% endif %}. Nội dung bị nhiều người báo cáo hiển thị trước.</p>
+
+    <div class="filter-pills" style="margin-top:12px;">
+        <a href="{% url 'moderation:report_list' %}" {% if not current_category %}class="active"{% endif %}>Tất cả</a>
+        {% for value, label in category_choices %}
+            <a href="?category={{ value }}" {% if current_category == value %}class="active"{% endif %}>{{ label }}</a>
+        {% endfor %}
+    </div>
+
+    {% for g in groups %}
+    <div class="report-group{% if g.reporter_count > 1 %} hot{% endif %}">
+        <div class="report-head">
+            <h3>
+                <span class="pill">{{ g.type_name }}</span>
+                {% if g.url %}<a href="{{ g.url }}">{{ g.label }}</a>{% else %}{{ g.label }}{% endif %}
+            </h3>
+            <a class="btn btn-sm" href="{% url 'moderation:report_resolve' g.latest.pk %}">Xử lý</a>
+        </div>
+        <div class="report-meta">
+            <span class="report-count">{{ g.reporter_count }} người báo cáo</span>
+            {% if g.reporter_count > 1 %}<span class="status-tag">Nhiều báo cáo</span>{% endif %}
+            <span>· mới nhất {{ g.latest.created_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="report-meta">
+            {% for label, count in g.categories %}
+                <span class="reason-chip">{{ label }}{% if count > 1 %} ×{{ count }}{% endif %}</span>
+            {% endfor %}
+        </div>
+        <ul class="report-reasons">
+            {% for r in g.reports|slice:":3" %}
+                <li><strong>{{ r.reporter }}</strong> · {{ r.get_category_display }}{% if r.reason %}: {{ r.reason }}{% endif %}</li>
+            {% endfor %}
+            {% if g.reports|length > 3 %}<li>… và {{ g.reports|length|add:"-3" }} báo cáo khác</li>{% endif %}
+        </ul>
     </div>
     {% empty %}
-    <p>Không có báo cáo nào.</p>
+    <p style="margin-top:14px;">Không có báo cáo nào{% if current_category %} thuộc loại này{% endif %}.</p>
     {% endfor %}
 </div>
 {% endblock %}
