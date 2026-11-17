@@ -83,5 +83,5 @@ class GroupPostRejectForm(forms.Form):
 class GroupPostForm(forms.ModelForm):
     class Meta:
         model = GroupPost
-        fields = ["title", "body", "featured_image"]
+        fields = ["title", "category", "body", "featured_image"]
         labels = {"title": "Tiêu đề", "body": "Nội dung"}

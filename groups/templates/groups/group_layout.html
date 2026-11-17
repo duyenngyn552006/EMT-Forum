@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+
+    <style>
+     <style>
+    .group-layout {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .group-layout.with-sidebar {
+        display: grid;
+        grid-template-columns: 236px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+    }
+
+    .group-main {
+        min-width: 0;
+    }
+
+    /* Khung trắng chứa toàn bộ menu nhóm */
+    .group-layout > .group-sidebar {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 16px;
+        background: #fff;
+        border: 1px solid #e1e7ef;
+        border-radius: 14px;
+        box-shadow: 0 2px 8px rgb(16 42 76 / 5%);
+    }
+
+    /* Nút đăng bài rộng bằng phần menu */
+    .group-sidebar nav > .btn {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 22px;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .group-sidebar h2 {
+        margin: 20px 10px 6px;
+        color: #536174;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.4;
+        text-transform: uppercase;
+    }
+
+    /* Mỗi mục là một hàng có khoảng bấm riêng */
+    .group-sidebar nav a.group-link {
+        display: block;
+        box-sizing: border-box;
+        margin: 2px 0;
+        padding: 9px 10px;
+        border-radius: 7px;
+        color: #171717;
+        text-decoration: none;
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
+    .group-sidebar nav a.group-link:visited {
+        color: #171717;
+    }
+
+    .group-sidebar nav a.group-link:hover {
+        background: #f0f4f9;
+    }
+
+    .group-sidebar nav a.group-link.active {
+        background: #e0edff;
+        font-weight: 600;
+    }
+
+    /* Giảm chiều cao ảnh bìa để bài thảo luận xuất hiện sớm hơn */
+    .group-main .cover-header .cover-banner {
+        height: clamp(100px, 12vw, 150px);
+        min-height: 0;
+    }
+
+    @media (min-width: 761px) {
+        .group-layout.with-sidebar > .group-sidebar {
+            position: sticky;
+            top: 112px;
+            max-height: calc(100dvh - 128px);
+            overflow-y: auto;
+        }
+    }
+
+    @media (max-width: 760px) {
+        .group-layout.with-sidebar {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 16px;
+        }
+    }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="group-layout{% if is_member %} with-sidebar{% endif %}">
+
+    {% if is_member %}
+        <aside class="group-sidebar group-sidebar-sticky">
+            <nav aria-label="Điều hướng trong nhóm">
+                {% if group.status == "active" %}
+                    <a class="btn" href="{% url 'groups:post_create' group.slug %}">
+                        + Đăng bài mới
+                    </a>
+                {% endif %}
+
+                <h2>Bài viết</h2>
+                <a class="group-link{% if not mine_posts and not selected_category %} active{% endif %}"
+                   href="{{ group.get_absolute_url }}">Tất cả bài viết</a>
+                <a class="group-link{% if mine_posts %} active{% endif %}"
+                   href="{{ group.get_absolute_url }}?mine=1">Bài viết của tôi</a>
+
+                <h2>Chuyên mục nhóm</h2>
+                {% for value, label in group_categories %}
+    <a class="group-link{% if selected_category == value %} active{% endif %}"
+       href="{% url 'groups:detail' group.slug %}?category={{ value }}#tab-discussion"
+       {% if selected_category == value %}aria-current="page"{% endif %}>
+        {{ label }}
+    </a>
+{% empty %}
+    <small>Chưa có chuyên mục.</small>
+{% endfor %}
+            </nav>
+        </aside>
+    {% endif %}
+
+    <div class="group-main">
+        {% block group_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

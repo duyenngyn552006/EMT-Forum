@@ -285,17 +285,43 @@ def leave_group(group: Group, user):
 
 
 def create_group_post(group, author, title, body, featured_image=None):
-    """MOI bai viet trong nhom deu phai cho truong/pho nhom duyet (khac ForumPost/
-    Announcement - chi cho duyet khi dinh tu khoa nhay cam). Van quet tu khoa de hien
-    note do rieng cho truong/pho nhom biet bai nao dang nghi vi pham."""
+    """Trưởng/phó nhóm được đăng trực tiếp nếu bài không có từ khóa nhạy cảm."""
     body = sanitize_html(body)
     keyword = find_sensitive_keyword(title, body)
-    post = GroupPost.objects.create(
-        group=group, author=author, title=title, body=body,
-        status=ContentStatus.PENDING_REVIEW, featured_image=featured_image,
+
+    # Kiểm tra vai trò của người đăng trong chính nhóm này.
+    is_manager = GroupMembership.objects.filter(
+        group=group,
+        user=author,
+        role__in=[
+            GroupMembership.Role.LEADER,
+            GroupMembership.Role.MODERATOR,
+        ],
+    ).exists()
+
+    status = (
+        ContentStatus.PUBLISHED
+        if is_manager and keyword is None
+        else ContentStatus.PENDING_REVIEW
     )
+
+    post = GroupPost.objects.create(
+        group=group,
+        author=author,
+        title=title,
+        body=body,
+        status=status,
+        featured_image=featured_image,
+    )
+
     if keyword:
-        log_action(actor=None, action="warn", reason=f"Tự động chuyển chờ kiểm duyệt do từ khóa: '{keyword.keyword}'", content_object=post)
+        log_action(
+            actor=None,
+            action="warn",
+            reason=f"Tự động chuyển chờ kiểm duyệt do từ khóa: '{keyword.keyword}'",
+            content_object=post,
+        )
+
     return post, keyword
 
 

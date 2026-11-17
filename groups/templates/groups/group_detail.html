@@ -1,8 +1,38 @@
-{% extends "base.html" %}
+{% extends "groups/group_layout.html" %}
 {% block title %}{{ group.name }}{% endblock %}
-{% block content %}
+{% block group_content %}
 <style>
     .recruit-box { background: #f4f8ff; border: 1px solid #c7d9f7; border-radius: 8px; padding: 12px 14px; margin: 10px 0 14px; }
+    .group-post-search {
+    margin: 0 0 16px;
+}
+
+.group-post-search label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.group-post-search-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.group-post-search-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+}
+
+.group-post-search-row .btn {
+    margin: 0;
+    white-space: nowrap;
+}
 </style>
 <div class="cover-header">
     <div class="cover-banner" {% if group.cover_image %}style="background-image: url('{{ group.cover_image.url }}');"{% endif %}></div>
@@ -18,8 +48,6 @@
     {% if group.status == "disabled" %}<span class="badge">⚠️ Nhóm đã bị vô hiệu hóa</span>{% endif %}
     {% if group.is_private %}<span class="badge">🔒 Riêng tư</span>{% else %}<span class="badge">🌐 Công khai</span>{% endif %}
     <h1>{{ group.name }}</h1>
-    <p>{{ group.description|linebreaks }}</p>
-    <p>Tạo bởi <a class="author-link" href="{{ group.created_by.get_absolute_url }}">{{ group.created_by }}</a> · {{ group.created_at|date:"d/m/Y" }}</p>
     {% if group.is_recruiting_open %}
         <div class="recruit-box">
             <strong>🔎 Nhóm đang tuyển thành viên</strong>
@@ -27,9 +55,7 @@
             <p style="margin:0;font-size:13px;color:#6b7280;">{% if group.recruit_deadline %}Hạn nhận đăng ký: {{ group.recruit_deadline|date:"d/m/Y" }}{% else %}Nhận đăng ký đến khi nhóm đóng tuyển{% endif %}</p>
         </div>
     {% endif %}
-    {% if is_member %}
-        <a class="btn" href="{% url 'groups:post_create' group.slug %}">+ Đăng bài trong nhóm</a>
-    {% elif user.is_authenticated and group.status == "active" %}
+    {% if not is_member and user.is_authenticated and group.status == "active" %}
         {% if has_pending_join_request %}
             <span class="badge">Yêu cầu tham gia đang chờ duyệt</span>
         {% else %}
@@ -64,23 +90,89 @@
 </div>
 
 <div class="tab-bar">
-    <button type="button" class="active" onclick="switchGroupTab(this, 'tab-discussion')">Bài viết trong nhóm</button>
-    <button type="button" onclick="switchGroupTab(this, 'tab-members')">Thành viên ({{ group.memberships.count }})</button>
+    <button type="button" class="active"
+            onclick="switchGroupTab(this, 'tab-discussion')">
+        Thảo luận
+    </button>
+    <button type="button" onclick="switchGroupTab(this, 'tab-members')">
+        Thành viên ({{ group.memberships.count }})
+    </button>
+    <button type="button" onclick="switchGroupTab(this, 'tab-about')">
+        Giới thiệu
+    </button>
     {% if is_manager %}
-        <button type="button" onclick="switchGroupTab(this, 'tab-moderation')">Duyệt nội dung ({{ pending_posts|length }})</button>
+        <button type="button" onclick="switchGroupTab(this, 'tab-moderation')">
+            Duyệt nội dung ({{ pending_posts|length }})
+        </button>
     {% endif %}
 </div>
-
+<div id="tab-about" class="tab-panel" hidden>
+    <div class="card">
+        <h2>Giới thiệu nhóm</h2>
+        {{ group.description|default:"Nhóm chưa có mô tả."|linebreaks }}
+        <p>
+            Tạo bởi
+            <a class="author-link" href="{{ group.created_by.get_absolute_url }}">
+                {{ group.created_by }}
+            </a>
+            · {{ group.created_at|date:"d/m/Y" }}
+        </p>
+    </div>
+</div>
 <div id="tab-discussion" class="tab-panel">
     {% if not can_view_posts %}
     <div class="card">
         <p>🔒 Đây là nhóm riêng tư. Chỉ thành viên mới xem được bài viết trong nhóm.</p>
     </div>
     {% else %}
-    <div class="filter-pills" style="margin-bottom:12px;">
-        <a href="?sort=new" {% if current_sort == "new" %}class="active"{% endif %}>Mới nhất</a>
-        <a href="?sort=activity" {% if current_sort == "activity" %}class="active"{% endif %}>Hoạt động gần nhất</a>
+    {% if recruit_days_left != None %}
+    {% if recruit_days_left == 0 %}
+        <p class="card">
+            <strong>Hôm nay là ngày cuối đăng ký tham gia nhóm.</strong>
+        </p>
+    {% elif recruit_days_left <= 3 %}
+        <p class="card">
+            <strong>Còn {{ recruit_days_left }} ngày để đăng ký tham gia nhóm.</strong>
+            Hạn đăng ký: {{ group.recruit_deadline|date:"d/m/Y" }}.
+        </p>
+    {% endif %}
+{% endif %}
+    <form method="get"
+      action="{{ group.get_absolute_url }}#tab-discussion"
+      class="group-post-search"
+      role="search"
+      aria-label="Tìm bài viết trong nhóm">
+
+    {% if selected_category %}
+        <input type="hidden" name="category" value="{{ selected_category }}">
+    {% endif %}
+    {% if mine_posts %}
+        <input type="hidden" name="mine" value="1">
+    {% endif %}
+    <input type="hidden" name="sort" value="{{ current_sort|default:'new' }}">
+
+    <label for="group-post-query">Tìm bài viết trong nhóm</label>
+    <div class="group-post-search-row">
+        <input id="group-post-query"
+               type="search"
+               name="q"
+               value="{{ post_query }}"
+               placeholder="Nhập từ khóa trong tiêu đề hoặc nội dung…">
+        <button type="submit" class="btn">Tìm kiếm</button>
     </div>
+</form>
+
+<div class="filter-pills" style="margin-bottom:12px;">
+    <a href="?sort=new{% if post_query %}&amp;q={{ post_query|urlencode }}{% endif %}{% if selected_category %}&amp;category={{ selected_category|urlencode }}{% endif %}{% if mine_posts %}&amp;mine=1{% endif %}#tab-discussion"
+       {% if current_sort == "new" %}class="active"{% endif %}>
+        Mới nhất
+    </a>
+
+    <a href="?sort=activity{% if post_query %}&amp;q={{ post_query|urlencode }}{% endif %}{% if selected_category %}&amp;category={{ selected_category|urlencode }}{% endif %}{% if mine_posts %}&amp;mine=1{% endif %}#tab-discussion"
+       {% if current_sort == "activity" %}class="active"{% endif %}>
+        Hoạt động gần nhất
+    </a>
+</div>
     {% for p in posts %}
     <div class="list-card">
         {% if p.featured_image %}
@@ -90,6 +182,9 @@
         {% endif %}
         <div class="list-body">
             <div class="list-meta">
+                {% if p.is_pinned and p.status == "published" %}
+                <span class="badge">📌 Đã ghim</span>
+            {% endif %}
                 {% if p.status == "pending_review" %}<span class="status-tag">Chờ kiểm duyệt</span>{% endif %}
                 <span><a class="author-link" href="{{ p.author.get_absolute_url }}">{{ p.author }}</a></span>
                 <span>· {{ p.created_at|date:"d/m/Y H:i" }}</span>
@@ -100,9 +195,30 @@
             </div>
             <h3 class="list-title"><a href="{% url 'groups:post_detail' group.slug p.pk %}">{{ p.title }}</a></h3>
             <p class="list-excerpt">{{ p.body|striptags|truncatewords:28 }}</p>
+                        {% if is_manager and p.status == "published" %}
+                <form method="post" action="{% url 'groups:post_pin' group.slug p.pk %}">
+                    {% csrf_token %}
+                    {% if p.is_pinned %}
+                        <button type="submit" name="action" value="unpin" class="btn btn-secondary">
+                            Bỏ ghim
+                        </button>
+                    {% else %}
+                        <button type="submit" name="action" value="pin" class="btn btn-secondary">
+                            Ghim bài
+                        </button>
+                    {% endif %}
+                </form>
+            {% endif %}
         </div>
     </div>
-    {% empty %}
+    {% if post_query %}
+    <p>Không tìm thấy bài viết phù hợp với “{{ post_query }}”.</p>
+    <a href="?sort={{ current_sort|default:'new'|urlencode }}{% if selected_category %}&amp;category={{ selected_category|urlencode }}{% endif %}{% if mine_posts %}&amp;mine=1{% endif %}#tab-discussion">
+        Xóa từ khóa tìm kiếm
+    </a>
+{% else %}
+    <p>Chưa có bài đăng.</p>
+{% endif %}
     <div class="card">
         <p>Chưa có bài đăng.</p>
     </div>
