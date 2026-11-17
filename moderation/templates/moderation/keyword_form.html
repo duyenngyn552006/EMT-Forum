@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "moderation/base_moderation.html" %}
 {% block title %}{% if object %}Sửa từ khóa{% else %}Thêm từ khóa{% endif %}{% endblock %}
-{% block content %}
+{% block mod_content %}
 <div class="card">
     <h1>{% if object %}Sửa từ khóa "{{ object.keyword }}"{% else %}Thêm từ khóa nhạy cảm{% endif %}</h1>
     <form method="post">

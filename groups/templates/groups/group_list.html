@@ -1,36 +1,138 @@
 {% extends "base.html" %}
-{% block title %}Nhóm{% endblock %}
+
+{% block title %}{% if mine_only %}Nhóm của tôi{% else %}Danh sách nhóm{% endif %}{% endblock %}
+
 {% block content %}
 <div class="card">
-    <h1>Danh sách nhóm</h1>
-    {% if user.is_authenticated %}<a class="btn" href="{% url 'groups:create' %}">+ Tạo nhóm mới</a>{% endif %}
-    <div class="filter-pills" style="margin-top:12px;">
-        <a href="{% url 'groups:list' %}" {% if not recruiting_only %}class="active"{% endif %}>Tất cả nhóm</a>
-        <a href="{% url 'groups:list' %}?recruiting=1" {% if recruiting_only %}class="active"{% endif %}>🔎 Đang tuyển thành viên</a>
-    </div>
-</div>
-{% for g in groups %}
-<div class="list-card">
-    <div class="list-avatar">
-        {% if g.logo %}<img src="{{ g.logo.url }}" alt="{{ g.name }}">{% else %}{{ g.name|first|upper }}{% endif %}
-    </div>
-    <div class="list-body">
-        <div class="list-meta">
-            <span>Tạo bởi <a class="author-link" href="{{ g.created_by.get_absolute_url }}">{{ g.created_by }}</a></span>
-            <span>· {{ g.created_at|date:"d/m/Y" }}</span>
-            <span class="badge">{{ g.memberships.count }} thành viên</span>
-            {% if g.is_private %}<span class="badge">🔒 Riêng tư</span>{% else %}<span class="badge">🌐 Công khai</span>{% endif %}
-            {% if g.is_recruiting_open %}<span class="badge" style="background:#e3f7e9;color:#14532d;">🔎 Đang tuyển</span>{% endif %}
+    <h1>{% if mine_only %}Nhóm của tôi{% else %}Danh sách nhóm{% endif %}</h1>
+
+    {% if user.is_authenticated %}
+        <a class="btn" href="{% url 'groups:create' %}">+ Tạo nhóm mới</a>
+
+        <nav class="filter-pills" style="margin-top:12px;" aria-label="Danh sách nhóm">
+            <a href="{% url 'groups:list' %}"
+               {% if not mine_only %}class="active" aria-current="page"{% endif %}>
+                Tất cả nhóm
+            </a>
+            <a href="{% url 'groups:list' %}?mine=1"
+               {% if mine_only %}class="active" aria-current="page"{% endif %}>
+                Nhóm của tôi
+            </a>
+        </nav>
+    {% endif %}
+
+    <form method="get" action="{% url 'groups:list' %}" class="group-filter"
+          style="display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-top:16px;">
+
+        {% if mine_only %}
+            <input type="hidden" name="mine" value="1">
+        {% endif %}
+
+        <div style="flex:1 1 200px;">
+            <label for="group-search">Tên nhóm</label>
+            <input type="search" id="group-search" name="q"
+                   value="{{ keyword }}" placeholder="Nhập tên nhóm cần tìm"
+                   style="display:block; width:100%; box-sizing:border-box;">
         </div>
-        <h3 class="list-title"><a href="{% url 'groups:detail' g.slug %}">{{ g.name }}</a></h3>
-        <p class="list-excerpt">{{ g.description|truncatewords:30 }}</p>
-        {% if g.is_recruiting_open %}<p class="list-excerpt"><strong>Cần tuyển:</strong> {{ g.recruit_positions|truncatewords:20 }}</p>{% endif %}
+
+        <div>
+            <label for="group-visibility">Chế độ hiển thị</label>
+            <select id="group-visibility" name="visibility" style="display:block;">
+                <option value="">Tất cả</option>
+                <option value="public" {% if selected_visibility == "public" %}selected{% endif %}>
+                    Công khai
+                </option>
+                <option value="private" {% if selected_visibility == "private" %}selected{% endif %}>
+                    Riêng tư
+                </option>
+            </select>
+        </div>
+
+        <label>
+            <input type="checkbox" name="recruiting" value="1"
+                   {% if recruiting_only %}checked{% endif %}>
+            Chỉ hiện nhóm đang tuyển
+        </label>
+
+        <button type="submit" class="btn">Tìm nhóm</button>
+
+        {% if keyword or selected_visibility or recruiting_only %}
+            <a href="{% url 'groups:list' %}{% if mine_only %}?mine=1{% endif %}">
+                Xóa bộ lọc
+            </a>
+        {% endif %}
+    </form>
+</div>
+
+{% for g in groups %}
+    <div class="list-card">
+        <div class="list-avatar">
+            {% if g.logo %}
+                <img src="{{ g.logo.url }}" alt="Logo {{ g.name }}">
+            {% else %}
+                {{ g.name|first|upper }}
+            {% endif %}
+        </div>
+
+        <div class="list-body">
+            <h3 class="list-title">
+                <a href="{% url 'groups:detail' g.slug %}">{{ g.name }}</a>
+            </h3>
+
+            <div class="list-meta">
+                <span class="badge">{{ g.memberships.count }} thành viên</span>
+
+                {% if g.is_private %}
+                    <span class="badge">🔒 Riêng tư</span>
+                {% else %}
+                    <span class="badge">🌐 Công khai</span>
+                {% endif %}
+
+                {% if g.is_recruiting_open %}
+                    <span class="badge" style="background:#e3f7e9; color:#14532d;">
+                        Đang tuyển
+                    </span>
+                {% endif %}
+            </div>
+
+            <p class="list-excerpt">{{ g.description|truncatewords:30 }}</p>
+
+            {% if g.is_recruiting_open %}
+                {% if g.recruit_positions %}
+                    <p class="list-excerpt">
+                        <strong>Cần tuyển:</strong> {{ g.recruit_positions|truncatewords:20 }}
+                    </p>
+                {% endif %}
+                {% if g.recruit_deadline %}
+                    <p class="list-excerpt">
+                        <strong>Hạn đăng ký:</strong> {{ g.recruit_deadline|date:"d/m/Y" }}
+                    </p>
+                {% endif %}
+            {% endif %}
+
+            <div class="list-meta">
+                <span>
+                    Tạo bởi
+                    <a class="author-link" href="{{ g.created_by.get_absolute_url }}">
+                        {{ g.created_by }}
+                    </a>
+                </span>
+                <span>· {{ g.created_at|date:"d/m/Y" }}</span>
+            </div>
+        </div>
     </div>
-</div>
 {% empty %}
-<div class="card">
-    <p>{% if recruiting_only %}Hiện chưa có nhóm nào đang tuyển thành viên.{% else %}Chưa có nhóm nào.{% endif %}</p>
-</div>
+    <div class="card">
+        {% if keyword or selected_visibility or recruiting_only %}
+            <p>Không tìm thấy nhóm phù hợp. Bạn có thể đổi từ khóa hoặc xóa bộ lọc.</p>
+        {% elif mine_only %}
+            <p>Bạn chưa tham gia nhóm nào đang hoạt động.</p>
+            <a href="{% url 'groups:list' %}">Khám phá các nhóm</a>
+        {% else %}
+            <p>Hiện chưa có nhóm nào đang hoạt động.</p>
+        {% endif %}
+    </div>
 {% endfor %}
+
 {% include "_pagination.html" with noun="nhóm" %}
 {% endblock %}

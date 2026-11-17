@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "moderation/base_moderation.html" %}
 {% block title %}Xem xét kháng nghị{% endblock %}
-{% block content %}
+{% block mod_content %}
 <div class="card">
     <h1>Kháng nghị của {{ appeal.user }}</h1>
     <p>Lý do khóa: {{ appeal.user.locked_reason }}</p>

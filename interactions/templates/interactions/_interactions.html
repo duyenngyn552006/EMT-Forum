@@ -208,6 +208,9 @@
                                 Trả lời
                             </button>
                         {% endif %}
+                        {% if user.is_authenticated and user != comment.author %}
+                            <a class="reply-toggle-btn danger-text" style="text-decoration:none;" href="{% url 'moderation:create_report' 'comment' comment.pk %}">🚩 Báo cáo</a>
+                        {% endif %}
                         {% if model_key == "forumpost" and can_accept_answer and object.is_question and comment.status == "published" %}
                             <form method="post" action="{% url 'forum:accept_answer' object.pk comment.pk %}" style="display:inline;">
                                 {% csrf_token %}
@@ -257,6 +260,11 @@
                                             {% if reply.status == "pending_review" %}<span class="status-tag">Chờ kiểm duyệt</span>{% endif %}
                                             <p class="comment-body">{{ reply.body }}</p>
                                         </div>
+                                        {% if user.is_authenticated and user != reply.author %}
+                                            <div class="comment-actions-row">
+                                                <a class="reply-toggle-btn danger-text" style="text-decoration:none;" href="{% url 'moderation:create_report' 'comment' reply.pk %}">🚩 Báo cáo</a>
+                                            </div>
+                                        {% endif %}
                                         {% if user == reply.author or user.role == "staff" %}
                                             <div class="comment-actions-row">
                                                 <button type="button" class="reply-toggle-btn" onclick="toggleEditForm({{ reply.pk }})">

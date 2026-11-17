@@ -1,0 +1,90 @@
+<style>
+    /* D1 - bieu do cot ngang 1 chuoi (bao cao theo loai vi pham): 1 mau, nhan va so nam ngoai thanh */
+    .hbar-list { list-style: none; margin: 8px 0 0; padding: 0; }
+    .hbar-row { display: grid; grid-template-columns: minmax(150px, 260px) 1fr 40px; align-items: center; gap: 12px; padding: 6px 0; font-size: 13.5px; }
+    .hbar-label { color: var(--viz-text); }
+    .hbar-track { height: 14px; border-radius: 4px; background: var(--viz-grid); overflow: hidden; }
+    .hbar-fill { height: 100%; border-radius: 4px; background: var(--series-1); }
+    .hbar-value { text-align: right; font-weight: 700; color: var(--viz-text); font-variant-numeric: tabular-nums; }
+    .mod-table td:not(:first-child), .mod-table th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+    @media (max-width: 560px) { .hbar-row { grid-template-columns: 1fr 40px; } .hbar-track { grid-column: 1 / -1; grid-row: 2; } }
+</style>
+
+<div class="stat-grid">
+    {% for t in mod.tiles %}
+    <div class="stat-tile">
+        <p class="stat-label">{{ t.label }}</p>
+        <p class="stat-value">{{ t.value }}</p>
+        <p class="stat-sub">
+            {% if t.previous is not None %}
+                {% if t.delta is None %}
+                    {% if t.value %}<span class="stat-delta new">Mới phát sinh</span> · {{ info.prev_label }}: 0{% else %}<span class="stat-delta flat">Chưa có báo cáo</span>{% endif %}
+                {% else %}
+                    {# Bao cao tang la tin xau -> mau do; giam la tin tot -> mau xanh #}
+                    {% if t.delta > 0 %}<span class="stat-delta down"><span aria-hidden="true">▲</span> +{{ t.delta }}%</span>
+                    {% elif t.delta < 0 %}<span class="stat-delta up"><span aria-hidden="true">▼</span> {{ t.delta }}%</span>
+                    {% else %}<span class="stat-delta flat">Không đổi</span>{% endif %}
+                    so với {{ info.prev_label }} ({{ t.previous }})
+                {% endif %}
+            {% else %}{{ t.sub }}{% endif %}
+        </p>
+    </div>
+    {% endfor %}
+</div>
+
+<h3>Cần xử lý ngay</h3>
+<div class="stat-grid">
+    <div class="stat-tile{% if mod.queue.reports %} needs-action{% endif %}">
+        <p class="stat-label">Báo cáo đang mở{% if mod.queue.reports %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
+        <p class="stat-value">{{ mod.queue.reports }}</p>
+        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:report_list' %}">Mở danh sách báo cáo <span class="arrow" aria-hidden="true">→</span></a></p>
+    </div>
+    <div class="stat-tile{% if mod.queue.content %} needs-action{% endif %}">
+        <p class="stat-label">Nội dung chờ kiểm duyệt{% if mod.queue.content %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
+        <p class="stat-value">{{ mod.queue.content }}</p>
+        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:pending_content_list' %}">Mở hàng chờ duyệt <span class="arrow" aria-hidden="true">→</span></a></p>
+    </div>
+    <div class="stat-tile{% if mod.queue.appeals %} needs-action{% endif %}">
+        <p class="stat-label">Kháng nghị chờ xét{% if mod.queue.appeals %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
+        <p class="stat-value">{{ mod.queue.appeals }}</p>
+        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:appeal_list' %}">Mở danh sách kháng nghị <span class="arrow" aria-hidden="true">→</span></a></p>
+    </div>
+</div>
+
+<div class="card chart-card">
+    <div class="chart-head">
+        <div>
+            <h3>Báo cáo theo loại vi phạm</h3>
+            <p>{{ info.label }} · {{ mod.new_reports }} báo cáo mới</p>
+        </div>
+    </div>
+    <ul class="hbar-list" aria-label="Số báo cáo theo loại vi phạm">
+        {% for row in mod.by_category %}
+            <li class="hbar-row">
+                <span class="hbar-label">{{ row.label }}</span>
+                <span class="hbar-track" aria-hidden="true"><span class="hbar-fill" style="display:block; width: {{ row.pct }}%;"></span></span>
+                <span class="hbar-value">{{ row.count }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+    {% if not mod.new_reports %}<p class="chart-empty">Chưa có báo cáo nào trong kỳ này.</p>{% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Hoạt động xử lý của Giáo vụ</h3>
+    <p class="stat-sub" style="margin-top:0;">{{ info.label }} · đếm theo nhật ký kiểm duyệt</p>
+    {% if mod.activity_rows %}
+    <div class="table-responsive">
+        <table class="mod-table">
+            <thead><tr><th>Giáo vụ</th>{% for h in mod.activity_headers %}<th>{{ h }}</th>{% endfor %}<th>Tổng</th></tr></thead>
+            <tbody>
+                {% for row in mod.activity_rows %}
+                    <tr><td>{{ row.actor }}</td>{% for c in row.cells %}<td>{{ c }}</td>{% endfor %}<td><strong>{{ row.total }}</strong></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="chart-empty">Chưa có hoạt động xử lý nào trong kỳ này.</p>
+    {% endif %}
+</div>

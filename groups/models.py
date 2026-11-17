@@ -165,12 +165,26 @@ class GroupInvitation(models.Model):
 
 
 class GroupPost(ModeratedContentMixin, models.Model):
+    class Category(models.TextChoices):
+        ANNOUNCEMENT = "announcement", "Thông báo nội bộ"
+        PLAN = "plan", "Kế hoạch & phân công"
+        ACTIVITY = "activity", "Lịch hoạt động"
+        DOCUMENT = "document", "Tài liệu & biểu mẫu"
+        DISCUSSION = "discussion", "Hỏi đáp & thảo luận"
+
+    category = models.CharField(
+        "Chuyên mục",
+        max_length=30,
+        choices=Category.choices,
+        default=Category.DISCUSSION,
+    )
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="posts")
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="group_posts")
     title = models.CharField(max_length=255)
     body = CKEditor5Field(config_name="default")
     featured_image = models.ImageField("Ảnh đại diện", upload_to="groups/%Y/%m/", blank=True, null=True)
     # Tai lieu dinh kem (link Drive / tep tai len) - GenericRelation de xoa bai thi xoa luon tai lieu (khong tao cot DB)
+    is_pinned = models.BooleanField("Ghim đầu nhóm", default=False)
     documents = GenericRelation("interactions.DocumentLink")
 
     class Meta:
