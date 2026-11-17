@@ -622,6 +622,36 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     {% block extra_head %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=21">
+    <style>
+    .group-breadcrumb {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 18px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .group-breadcrumb a,
+    .group-breadcrumb a:visited {
+        color: #0755a1;
+        text-decoration: none;
+    }
+
+    .group-breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .group-breadcrumb .separator {
+        color: #64748b;
+    }
+
+    .group-breadcrumb [aria-current="page"] {
+        color: #111827;
+        font-weight: 600;
+    }
+</style>
 </head>
 <body>
 <header class="site-header">

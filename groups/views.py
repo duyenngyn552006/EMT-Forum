@@ -29,6 +29,7 @@ from .forms import (
     JoinRequestRejectForm,
     MemberRoleForm,
     TransferLeadershipForm,
+    GroupRecruitmentForm,
 )
 from .models import Group, GroupJoinRequest, GroupMembership, GroupPost
 
@@ -266,6 +267,7 @@ def group_post_create(request, slug):
             post, keyword = services.create_group_post(
                 group, request.user, form.cleaned_data["title"], form.cleaned_data["body"],
                 featured_image=form.cleaned_data.get("featured_image"),
+                category=form.cleaned_data["category"],
             )
             save_document_formset(document_formset, post)
             notify_mentions(request.user, extract_mentioned_user_ids(post.body), post)
@@ -317,6 +319,7 @@ def group_post_edit(request, slug, pk):
                 post=post, editor=request.user,
                 title=form.cleaned_data["title"], body=form.cleaned_data["body"],
                 featured_image=form.cleaned_data.get("featured_image"),
+                category=form.cleaned_data["category"],
             )
             save_document_formset(document_formset, post)
             notify_mentions(request.user, extract_mentioned_user_ids(post.body), post)
@@ -433,11 +436,6 @@ def group_edit(request, slug):
                 group, form.cleaned_data["name"], form.cleaned_data["description"],
                 logo=form.cleaned_data.get("logo"), cover_image=form.cleaned_data.get("cover_image"),
                 visibility=form.cleaned_data["visibility"],
-                recruitment={
-                    "is_recruiting": form.cleaned_data["is_recruiting"],
-                    "recruit_positions": form.cleaned_data["recruit_positions"],
-                    "recruit_deadline": form.cleaned_data["recruit_deadline"],
-                },
             )
             messages.success(request, "Đã cập nhật thông tin nhóm.")
             return redirect(group.get_absolute_url())
@@ -445,6 +443,47 @@ def group_edit(request, slug):
         form = GroupEditForm(instance=group)
     return render(request, "groups/group_edit_form.html", {"form": form, "group": group})
 
+@login_required
+def group_recruitment_edit(request, slug):
+    group = get_object_or_404(Group, slug=slug)
+
+    is_leader = group.memberships.filter(
+        user=request.user,
+        role=GroupMembership.Role.LEADER,
+    ).exists()
+
+    if not (is_leader or request.user.role == User.Role.STAFF):
+        messages.error(
+            request,
+            "Bạn không có quyền quản lý tuyển thành viên của nhóm này.",
+        )
+        return redirect(group.get_absolute_url())
+
+    if request.method == "POST":
+        form = GroupRecruitmentForm(request.POST, instance=group)
+
+        if form.is_valid():
+            recruitment = form.save(commit=False)
+            recruitment.save(update_fields=[
+                "is_recruiting",
+                "recruit_positions",
+                "recruit_deadline",
+                "updated_at",
+            ])
+
+            messages.success(
+                request,
+                "Đã cập nhật thông tin tuyển thành viên.",
+            )
+            return redirect(group.get_absolute_url())
+    else:
+        form = GroupRecruitmentForm(instance=group)
+
+    return render(
+        request,
+        "groups/group_recruitment_form.html",
+        {"form": form, "group": group},
+    )
 
 @user_passes_test(_is_staff, login_url="home")
 def group_disable(request, slug):

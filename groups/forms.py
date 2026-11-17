@@ -21,23 +21,55 @@ class GroupRejectForm(forms.Form):
 class GroupEditForm(forms.ModelForm):
     class Meta:
         model = Group
-        fields = ["name", "description", "logo", "cover_image", "visibility", "is_recruiting", "recruit_positions", "recruit_deadline"]
+        fields = [
+            "name", "description", "logo",
+            "cover_image", "visibility",
+        ]
         labels = GROUP_LABELS
+
+
+class GroupRecruitmentForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = [
+            "is_recruiting",
+            "recruit_positions",
+            "recruit_deadline",
+        ]
+        labels = {
+            "is_recruiting": "Đang tuyển thành viên",
+            "recruit_positions": "Vị trí / kỹ năng cần tuyển",
+            "recruit_deadline": "Hạn nhận đăng ký",
+        }
         widgets = {
-            "recruit_positions": forms.Textarea(attrs={"rows": 3, "placeholder": "VD: Thiết kế đồ họa, viết nội dung, chạy quảng cáo..."}),
-            "recruit_deadline": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "recruit_positions": forms.Textarea(attrs={
+                "rows": 4,
+                "placeholder": "VD: Thiết kế đồ họa, viết nội dung...",
+            }),
+            "recruit_deadline": forms.DateInput(
+                attrs={"type": "date"},
+                format="%Y-%m-%d",
+            ),
         }
 
     def clean(self):
         cleaned = super().clean()
+
         if cleaned.get("is_recruiting"):
             if not (cleaned.get("recruit_positions") or "").strip():
-                self.add_error("recruit_positions", "Hãy mô tả vị trí/kỹ năng đang cần tuyển.")
+                self.add_error(
+                    "recruit_positions",
+                    "Hãy mô tả vị trí/kỹ năng đang cần tuyển.",
+                )
+
             deadline = cleaned.get("recruit_deadline")
             if deadline and deadline < timezone.localdate():
-                self.add_error("recruit_deadline", "Hạn nhận đăng ký không được ở quá khứ.")
-        return cleaned
+                self.add_error(
+                    "recruit_deadline",
+                    "Hạn nhận đăng ký không được ở quá khứ.",
+                )
 
+        return cleaned
 
 class GroupDisableForm(forms.Form):
     reason = forms.CharField(widget=forms.Textarea, label="Lý do vô hiệu hóa", required=True)
@@ -84,4 +116,8 @@ class GroupPostForm(forms.ModelForm):
     class Meta:
         model = GroupPost
         fields = ["title", "category", "body", "featured_image"]
-        labels = {"title": "Tiêu đề", "body": "Nội dung"}
+        labels = {
+            "title": "Tiêu đề",
+            "category": "Chuyên mục",
+            "body": "Nội dung",
+        }
