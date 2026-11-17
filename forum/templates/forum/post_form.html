@@ -1,20 +1,124 @@
 {% extends "base.html" %}
-{% block title %}Đăng bài{% endblock %}
-{% block extra_head %}{{ form.media }}{% endblock %}
+{% block title %}Đăng bài mới | Diễn đàn EMT{% endblock %}
+
+{% block extra_head %}
+{{ form.media }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+.pc-container{max-width:760px;margin:24px auto;padding:0 16px}
+.pc-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,.06)}
+.pc-hero{background:#0b2545;color:#fff;padding:20px 24px}
+.pc-hero h2{margin:0 0 4px;font-size:1.15rem;font-weight:700}
+.pc-hero p{margin:0;font-size:.85rem;color:#cbd5e1}
+.pc-body-content{padding:24px}
+.pc-form-group{margin-bottom:18px}
+.pc-label{display:block;font-weight:600;font-size:.88rem;color:#1e293b;margin-bottom:6px}
+.pc-input, .pc-select{width:100%;padding:10px 14px;border:1px solid #cbd5e1;border-radius:10px;font-size:.92rem;color:#0f172a;background:#fff;outline:none;box-sizing:border-box}
+.pc-input:focus, .pc-select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+
+/* Khối checkbox câu hỏi cần giải đáp */
+.pc-question-box{background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.pc-question-box input[type="checkbox"]{width:20px;height:20px;accent-color:#d97706;cursor:pointer}
+.pc-question-box label{font-weight:600;font-size:.92rem;color:#92400e;cursor:pointer;margin:0}
+
+.pc-box-section{border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;background:#fff}
+.pc-box-title{font-weight:700;font-size:.9rem;color:#1e293b;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+
+/* Thu gọn khung tải ảnh đại diện thành một góc nhỏ gọn gàng */
+.pc-upload-box{border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;background:#f8fafc;display:flex;align-items:center;gap:14px;max-width:420px}
+.pc-upload-box i{font-size:1.6rem;color:#2563eb;flex-shrink:0}
+.pc-upload-content{flex:1;font-size:0.83rem;color:#64748b}
+.pc-upload-content span{display:block;font-weight:500;color:#334155;margin-bottom:2px}
+.pc-upload-box input[type="file"]{font-size:0.82rem;color:#334155;width:100%}
+
+.pc-actions{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0}
+.pc-btn{padding:10px 22px;border-radius:99px;font-weight:600;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .2s}
+.pc-btn-primary{background:#0b2545;color:#fff;border:none}
+.pc-btn-primary:hover{background:#1d4ed8}
+.pc-btn-secondary{background:transparent;color:#64748b;border:none}
+.pc-btn-secondary:hover{color:#0f172a}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-    <h1>{% if object %}Sửa bài viết{% else %}Đăng bài mới{% endif %}</h1>
-    <form method="post" enctype="multipart/form-data">
+<div class="pc-container">
+  <div class="pc-card">
+    <div class="pc-hero">
+      <h2 style="color: #ffffff !important;">Đăng bài mới</h2>
+      <p>Không gian chia sẻ kiến thức, đặt câu hỏi và kết nối sinh viên.</p>
+    </div>
+
+    <div class="pc-body-content">
+      <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form.as_p }}
-        {% include "interactions/_document_formset.html" %}
-        {% if not object and poll_form %}
-        <fieldset style="margin:16px 0;border:1px solid #e0e0e0;border-radius:8px;padding:4px 14px 10px;">
-            <legend style="padding:0 6px;font-weight:600;">📊 Thêm bình chọn (không bắt buộc)</legend>
-            {{ poll_form.as_p }}
-        </fieldset>
+
+        <!-- Chuyên mục -->
+        <div class="pc-form-group">
+          <label class="pc-label">Chuyên mục</label>
+          {{ form.category }}
+        </div>
+
+        <!-- Tiêu đề -->
+        <div class="pc-form-group">
+          <label class="pc-label">Tiêu đề bài viết</label>
+          {{ form.title }}
+        </div>
+
+        <!-- Checkbox đánh dấu câu hỏi cần giải đáp -->
+        {% if form.is_question %}
+        <div class="pc-question-box" onclick="const cb=this.querySelector('input[type=checkbox]');if(event.target!==cb)cb.checked=!cb.checked;">
+          {{ form.is_question }}
+          <div>
+            <div style="font-weight:700;">Đánh dấu là câu hỏi cần giải đáp</div>
+            <div style="font-size:0.8rem;color:#b45309;font-weight:normal;">Bài viết sẽ được hiển thị với trạng thái hỏi đáp để cộng đồng hỗ trợ giải đáp.</div>
+          </div>
+        </div>
         {% endif %}
-        <button class="btn" type="submit">Lưu</button>
-    </form>
+
+        <!-- Nội dung -->
+        <div class="pc-form-group">
+          <label class="pc-label">Nội dung</label>
+          {{ form.body }}
+        </div>
+
+        <!-- Ảnh đại diện (đã thu gọn một góc nhỏ) -->
+        <div class="pc-form-group">
+          <label class="pc-label">Ảnh đại diện</label>
+          <div class="pc-upload-box">
+            <i class="bi bi-cloud-arrow-up"></i>
+            <div class="pc-upload-content">
+              <span>Tải ảnh lên hoặc chọn tệp</span>
+              {{ form.featured_image }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Tài liệu đính kèm -->
+        <div class="pc-box-section">
+          <div class="pc-box-title"><i class="bi bi-paperclip" style="color:#2563eb;"></i> Tài liệu đính kèm <span style="font-weight:400;font-size:0.78rem;color:#64748b;margin-left:auto;">Không bắt buộc</span></div>
+          {% include "interactions/_document_formset.html" %}
+        </div>
+
+        <!-- Bình chọn -->
+        {% if not object and poll_form %}
+        <div class="pc-box-section">
+          <div class="pc-box-title"><i class="bi bi-bar-chart-fill" style="color:#2563eb;"></i> Tạo bình chọn</div>
+          {% for field in poll_form %}
+            <div class="pc-form-group" style="margin-bottom:10px;">
+              <label class="pc-label" style="font-size:0.82rem;color:#64748b;">{{ field.label }}</label>
+              {{ field }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Nút hành động -->
+        <div class="pc-actions">
+          <a href="{% url 'forum:post_list' %}" class="pc-btn pc-btn-secondary">Hủy</a>
+          <button type="submit" class="pc-btn pc-btn-primary"><i class="bi bi-send-fill"></i> Đăng bài</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

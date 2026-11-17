@@ -25,7 +25,7 @@ CONTENT_TYPE_CHOICES = (
 def _visible_status(user):
     """Nguoi dung thuong chi tim thay noi dung da dang cong khai; rieng Giao vu Khoa
     thay ca noi dung dang cho kiem duyet/da an de phuc vu giam sat toan he thong -
-    tra ve None nghia la khong loc theo status (thay tat ca)."""
+    tra ve None nghia la khong loc theo status (thay tat cao)."""
     if user.is_authenticated and user.role == User.Role.STAFF:
         return None
     return ContentStatus.PUBLISHED
@@ -71,37 +71,58 @@ def search_view(request):
     date_to = request.GET.get("date_to", "")
 
     status = _visible_status(request.user)
+
+    # --- 1. XÂY DỰNG QUERYSET RIÊNG CHO TỪNG LOẠI ĐỂ ĐẾM SỐ LƯỢNG CHÍNH XÁC ---
+
+    # 1.1. Thông báo (Announcement)
+    announcement_qs = Announcement.objects.select_related("author")
+    if status:
+        announcement_qs = announcement_qs.filter(status=status)
+    announcement_qs = _apply_common_filters(announcement_qs, query, author, class_name, date_from, date_to)
+    notification_count = announcement_qs.count()
+
+    # 1.2. Diễn đàn (Forum)
+    forum_qs = ForumPost.objects.select_related("author", "category")
+    if status:
+        forum_qs = forum_qs.filter(status=status)
+    if category_slug:
+        forum_qs = forum_qs.filter(category__slug=category_slug)
+    forum_qs = _apply_common_filters(forum_qs, query, author, class_name, date_from, date_to)
+    forum_count = forum_qs.count()
+
+    # 1.3. Nhóm (Group)
+    group_qs = GroupPost.objects.select_related("author", "group")
+    if status:
+        group_qs = group_qs.filter(status=status)
+    group_qs = _apply_common_filters(group_qs, query, author, class_name, date_from, date_to)
+    group_count = group_qs.count()
+
+    # Tổng số lượng cho tab "Tất cả"
+    total_count = notification_count + forum_count + group_count
+
+    # --- 2. GỘP VÀ LỌC KẾT QUẢ DỰA TRÊN TAB ĐANG CHỌN (content_type) ---
     results = []
 
-    if not content_type or content_type == "announcement":
-        qs = Announcement.objects.select_related("author")
-        if status:
-            qs = qs.filter(status=status)
-        qs = _apply_common_filters(qs, query, author, class_name, date_from, date_to)
-        results += [_to_result(obj, "announcement", "Thông tin / thông báo") for obj in qs]
+    if not content_type:
+        # Tab "Tất cả": gom chung cả 3 loại
+        results += [_to_result(obj, "announcement", "Thông tin / thông báo") for obj in announcement_qs]
+        results += [_to_result(obj, "forum", "Bài diễn đàn") for obj in forum_qs]
+        results += [_to_result(obj, "group", "Bài trong nhóm") for obj in group_qs]
+    elif content_type == "announcement":
+        results += [_to_result(obj, "announcement", "Thông tin / thông báo") for obj in announcement_qs]
+    elif content_type == "forum":
+        results += [_to_result(obj, "forum", "Bài diễn đàn") for obj in forum_qs]
+    elif content_type == "group":
+        results += [_to_result(obj, "group", "Bài trong nhóm") for obj in group_qs]
 
-    if not content_type or content_type == "forum":
-        qs = ForumPost.objects.select_related("author", "category")
-        if status:
-            qs = qs.filter(status=status)
-        if category_slug:
-            qs = qs.filter(category__slug=category_slug)
-        qs = _apply_common_filters(qs, query, author, class_name, date_from, date_to)
-        results += [_to_result(obj, "forum", "Bài diễn đàn") for obj in qs]
-
-    if not content_type or content_type == "group":
-        qs = GroupPost.objects.select_related("author", "group")
-        if status:
-            qs = qs.filter(status=status)
-        qs = _apply_common_filters(qs, query, author, class_name, date_from, date_to)
-        results += [_to_result(obj, "group", "Bài trong nhóm") for obj in qs]
-
+    # Sắp xếp theo thời gian mới nhất và giới hạn MAX_RESULTS
     results.sort(key=lambda r: r["created_at"], reverse=True)
     results = results[:MAX_RESULTS]
 
     if query:
         record_search(request.user, query)
 
+    # Phân trang
     paginator = Paginator(results, 15)
     page_obj = paginator.get_page(request.GET.get("page"))
 
@@ -128,6 +149,12 @@ def search_view(request):
         "content_type_choices": CONTENT_TYPE_CHOICES,
         "recent_searches": recent_searches,
         "has_filters": any([query, content_type, category_slug, author, class_name, date_from, date_to]),
+
+        # Biến đếm chính xác truyền ra template
+        "total_count": total_count,
+        "forum_count": forum_count,
+        "notification_count": notification_count,
+        "group_count": group_count,
     }
     return render(request, "search/search_results.html", context)
 
@@ -145,10 +172,7 @@ SUGGEST_LIMIT = 8
 
 @ratelimit(key="ip", rate="60/m", block=True)
 def suggest_view(request):
-    """Goi y tim kiem truc tiep cho o tim kiem header (JSON): khop TIEU DE / ten nhom, toi da SUGGEST_LIMIT muc,
-    chi noi dung nguoi xem duoc phep thay (giong search_view). Khong ghi lich su tim kiem o day."""
     from django.http import JsonResponse
-
     from groups.models import Group
 
     query = request.GET.get("q", "").strip()[:100]
@@ -162,7 +186,8 @@ def suggest_view(request):
 
     def rows(qs, type_key, type_label, meta):
         return [
-            {"type": type_key, "type_label": type_label, "title": obj.title, "url": obj.get_absolute_url(), "meta": meta(obj),
+            {"type": type_key, "type_label": type_label, "title": obj.title, "url": obj.get_absolute_url(),
+             "meta": meta(obj),
              "created_at": obj.created_at}
             for obj in qs
         ]
@@ -184,10 +209,10 @@ def suggest_view(request):
     results.sort(key=lambda r: r["created_at"], reverse=True)
 
     groups = [
-        {"type": "group", "type_label": "Nhóm", "title": g.name, "url": g.get_absolute_url(), "meta": "Nhóm đang hoạt động"}
+        {"type": "group", "type_label": "Nhóm", "title": g.name, "url": g.get_absolute_url(),
+         "meta": "Nhóm đang hoạt động"}
         for g in Group.objects.filter(status=Group.Status.ACTIVE, name__icontains=query).order_by("name")[:3]
     ]
-    # Nhom dua len dau (it, de nhan dien), con lai la noi dung moi nhat
     merged = (groups + results)[:SUGGEST_LIMIT]
     for row in merged:
         row.pop("created_at", None)

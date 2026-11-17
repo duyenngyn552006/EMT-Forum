@@ -1,98 +1,389 @@
 {% extends "base.html" %}
 {% block title %}Tìm kiếm{% endblock %}
+
 {% block content %}
-<div class="card">
-    <h1>Tìm kiếm</h1>
-    <form method="get" class="search-bar" style="margin-top:12px;max-width:100%;">
-        <input type="text" name="q" placeholder="Tìm kiếm trên toàn hệ thống..." value="{{ query }}">
-        <button type="submit">Tìm</button>
+<style>
+    /* ---------- Ẩn nút ▲▼ của ô nhập số và nút mũi tên của thanh cuộn ---------- */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+    ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+
+    /* ---------- Khung tìm kiếm cố định khi cuộn ---------- */
+    /* Nếu menu trên cùng của site cũng cố định, đặt --sr-top-offset bằng chiều cao menu*/
+    :root { --sr-top-offset: 0px; --sr-head-h: 0px; }
+    .sr-head { position: sticky; top: var(--sr-top-offset); z-index: 30; transition: box-shadow .2s, padding .2s; }
+    .sr-head.is-stuck { box-shadow: 0 6px 16px rgba(0,0,0,.10); }
+
+    /* Thu gọn: tiêu đề + ô tìm kiếm cùng 1 hàng, "Tìm gần đây" nằm ngay dưới */
+    .sr-head {
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px 20px; padding: 12px 20px !important;
+    }
+    .sr-head h1 { font-size: 20px !important; margin: 0 !important; white-space: nowrap; }
+    .sr-head .search-bar { flex: 1; min-width: 260px; margin-top: 0 !important; }
+    .sr-head .sr-recent { flex-basis: 100%; margin-top: 0 !important; }
+
+    /* ---------- Bố cục 2 cột ---------- */
+    .sr-layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .sr-side {
+        background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px;
+        position: sticky; top: calc(var(--sr-top-offset) + var(--sr-head-h) + 16px);
+    }
+    .sr-side-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .sr-side-head h2 { margin: 0; font-size: 16px; }
+    .sr-clear { font-size: 13px; color: #374151; text-decoration: underline; }
+    .sr-group { border-top: 1px solid #f0f1f3; padding: 14px 0; }
+    .sr-group:first-of-type { border-top: 0; padding-top: 0; }
+    .sr-group-title { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #4b5563; margin: 0 0 8px; }
+    .sr-opt {
+        display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px;
+        font-size: 14px; color: #1f2937; cursor: pointer;
+    }
+    .sr-opt:hover { background: #f3f4f6; }
+    .sr-opt input { accent-color: #0b192c; margin: 0; width: 16px; height: 16px; }
+    .sr-field label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin: 0 0 6px; }
+    .sr-field { margin-bottom: 10px; }
+    .sr-field input {
+        width: 100%; height: 38px; padding: 0 10px; border: 1px solid #d1d5db; border-radius: 8px;
+        font-size: 13px; box-sizing: border-box; background: #fff;
+    }
+    .sr-custom { display: none; margin: 6px 0 0; padding: 10px; background: #f9fafb; border-radius: 8px; }
+    .sr-custom.open { display: block; }
+    .sr-apply {
+        width: 100%; padding: 10px; background: #0b192c; color: #fff; border: 0; border-radius: 8px;
+        font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 4px;
+    }
+    .sr-apply:hover { background: #14284a; }
+    .sr-opt:focus-within, .sr-apply:focus-visible, .sr-field input:focus-visible { outline: 2px solid #0b192c; outline-offset: 1px; }
+
+    /* ---------- Cột kết quả ---------- */
+    .sr-topline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; min-height: 30px; }
+    .sr-count { font-size: 14px; color: #374151; font-weight: 600; margin-right: 4px; }
+    .sr-chip {
+        display: inline-flex; align-items: center; gap: 2px; height: 30px; padding: 0 4px 0 12px;
+        background: #e0e7ff; color: #1e1b8f; border-radius: 999px; font-size: 13px;
+    }
+    .sr-chip a { color: #1e1b8f; text-decoration: none; font-size: 16px; line-height: 1; padding: 4px 8px; border-radius: 999px; }
+    .sr-chip a:hover { background: #c7d2fe; }
+    .sr-chip a:focus-visible { outline: 2px solid #0b192c; }
+    .sr-toggle {
+        display: none; height: 36px; padding: 0 14px; border: 1px solid #d1d5db; background: #fff;
+        border-radius: 999px; font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+
+    /* ---------- Tab ---------- */
+    .sr-tabs {
+        display: flex; gap: 12px; margin: 20px 0 18px;
+        box-shadow: inset 0 -2px 0 #e5e7eb;
+        overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+    }
+    .sr-tabs::-webkit-scrollbar { display: none; }
+    .sr-tab {
+        padding: 10px 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center;
+        gap: 6px; color: #6b7280; white-space: nowrap; border-bottom: 2px solid transparent;
+    }
+    .sr-tab.active { color: #0b192c; border-bottom-color: #0b192c; }
+    .sr-tab .num { background: #f3f4f6; color: #374151; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+    .sr-tab.active .num { background: #0b192c; color: #fff; }
+
+    /* ---------- Responsive: màn nhỏ chuyển về 1 cột, bộ lọc thu vào nút ---------- */
+    @media (max-width: 900px) {
+        .sr-layout { grid-template-columns: 1fr; }
+        .sr-side { display: none; position: static; }
+        .sr-side.open { display: block; }
+        .sr-toggle { display: inline-flex; align-items: center; gap: 6px; }
+    }
+</style>
+
+<!-- Khối tìm kiếm chính -->
+<div id="srSentinel" style="height:1px; margin-bottom:-1px;"></div>
+<div class="card search-header-card sr-head" id="srHead">
+    <h1>Tìm kiếm hệ thống</h1>
+
+    <form method="get" class="search-bar" style="margin-top:12px; max-width:100%;">
+        <input type="text" name="q" placeholder="Nhập từ khóa tìm kiếm" value="{{ query }}">
+        {% if content_type %}<input type="hidden" name="type" value="{{ content_type }}">{% endif %}
+        {% if category_slug %}<input type="hidden" name="category" value="{{ category_slug }}">{% endif %}
+        {% if author %}<input type="hidden" name="author" value="{{ author }}">{% endif %}
+        {% if class_name %}<input type="hidden" name="class_name" value="{{ class_name }}">{% endif %}
+        {% if date_from %}<input type="hidden" name="date_from" value="{{ date_from }}">{% endif %}
+        {% if date_to %}<input type="hidden" name="date_to" value="{{ date_to }}">{% endif %}
+        <button type="submit" class="btn">Tìm kiếm</button>
     </form>
 
     {% if recent_searches %}
-    <div style="margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
-        <span style="font-size:13px;color:#6b7280;">Tìm gần đây:</span>
+    <div class="sr-recent" style="margin-top:14px; display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+        <span style="font-size:13px; color:#6b7280;">Tìm gần đây:</span>
         <div class="filter-pills">
             {% for rq in recent_searches %}
                 <a href="{% url 'search:results' %}?q={{ rq|urlencode }}">{{ rq }}</a>
             {% endfor %}
         </div>
-        <form method="post" action="{% url 'search:clear_history' %}">
+        <form method="post" action="{% url 'search:clear_history' %}" style="display:inline;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-secondary" style="padding:5px 12px;font-size:12px;">Xóa lịch sử</button>
+            <button type="submit" class="btn btn-secondary" style="padding:4px 10px; font-size:11px;">Xóa lịch sử</button>
         </form>
     </div>
     {% endif %}
 </div>
 
-<div class="card">
-    <form method="get" class="filter-grid">
-        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
-        <div>
-            <label>Loại nội dung</label>
-            <select name="type">
-                <option value="">Tất cả</option>
-                {% for key, label in content_type_choices %}
-                    <option value="{{ key }}" {% if content_type == key %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label>Danh mục (diễn đàn)</label>
-            <select name="category">
-                <option value="">Tất cả</option>
+<!-- Tab phân loại: href được JS tự ghép để luôn giữ nguyên các bộ lọc đang bật -->
+<nav class="sr-tabs" aria-label="Loại kết quả">
+    <a class="sr-tab {% if not content_type %}active{% endif %}" data-type="" href="?q={{ query|urlencode }}">
+        Tất cả <span class="num">{{ total_count|default:0 }}</span>
+    </a>
+    <a class="sr-tab {% if content_type == 'forum' %}active{% endif %}" data-type="forum" href="?q={{ query|urlencode }}&type=forum">
+        Diễn đàn <span class="num">{{ forum_count|default:0 }}</span>
+    </a>
+    <a class="sr-tab {% if content_type == 'announcement' %}active{% endif %}" data-type="announcement" href="?q={{ query|urlencode }}&type=announcement">
+        Thông báo <span class="num">{{ notification_count|default:0 }}</span>
+    </a>
+    <a class="sr-tab {% if content_type == 'group' %}active{% endif %}" data-type="group" href="?q={{ query|urlencode }}&type=group">
+        Nhóm <span class="num">{{ group_count|default:0 }}</span>
+    </a>
+</nav>
+
+<div class="sr-layout">
+
+    <!-- ===== CỘT TRÁI: BỘ LỌC ===== -->
+    <aside class="sr-side" id="filterSide" aria-label="Bộ lọc">
+        <form method="get" id="filterForm">
+            <input type="hidden" name="q" value="{{ query }}">
+            {% if content_type %}<input type="hidden" name="type" value="{{ content_type }}">{% endif %}
+
+            <div class="sr-side-head">
+                <h2>Bộ lọc</h2>
+                {% if category_slug or author or class_name or date_from or date_to %}
+                    <a class="sr-clear" href="{% url 'search:results' %}?q={{ query|urlencode }}{% if content_type %}&type={{ content_type }}{% endif %}">Xóa tất cả</a>
+                {% endif %}
+            </div>
+
+            <!-- Danh mục: chọn là lọc ngay -->
+            <div class="sr-group">
+                <p class="sr-group-title">Danh mục</p>
+                <label class="sr-opt">
+                    <input type="radio" name="category" value="" {% if not category_slug %}checked{% endif %}> Tất cả
+                </label>
                 {% for c in categories %}
-                    <option value="{{ c.slug }}" {% if category_slug == c.slug %}selected{% endif %}>{{ c.name }}</option>
+                <label class="sr-opt">
+                    <input type="radio" name="category" value="{{ c.slug }}" {% if category_slug == c.slug %}checked{% endif %}> {{ c.name }}
+                </label>
                 {% endfor %}
-            </select>
+            </div>
+
+            <!-- Thời gian: preset, hoặc tùy chọn khoảng ngày -->
+            <div class="sr-group">
+                <p class="sr-group-title">Thời gian</p>
+                <label class="sr-opt"><input type="radio" name="period" value="" checked> Mọi lúc</label>
+                <label class="sr-opt"><input type="radio" name="period" value="0"> Hôm nay</label>
+                <label class="sr-opt"><input type="radio" name="period" value="7"> 7 ngày qua</label>
+                <label class="sr-opt"><input type="radio" name="period" value="30"> 30 ngày qua</label>
+                <label class="sr-opt"><input type="radio" name="period" value="custom"> Tùy chọn...</label>
+
+                <div class="sr-custom" id="customDates">
+                    <div class="sr-field">
+                        <label for="dateFrom">Từ ngày</label>
+                        <input type="date" id="dateFrom" name="date_from" value="{{ date_from }}">
+                    </div>
+                    <div class="sr-field" style="margin-bottom:0;">
+                        <label for="dateTo">Đến ngày</label>
+                        <input type="date" id="dateTo" name="date_to" value="{{ date_to }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tác giả / Lớp: gõ rồi bấm Áp dụng hoặc Enter -->
+            <div class="sr-group">
+                <div class="sr-field">
+                    <label for="authorInput">Tác giả</label>
+                    <input type="text" id="authorInput" name="author" value="{{ author }}" placeholder="Tên hoặc email">
+                </div>
+                <div class="sr-field">
+                    <label for="classInput">Lớp</label>
+                    <input type="text" id="classInput" name="class_name" value="{{ class_name }}" placeholder="VD: 23K5" style="text-transform:uppercase;">
+                </div>
+                <button type="submit" class="sr-apply">Áp dụng</button>
+            </div>
+        </form>
+    </aside>
+
+    <!-- ===== CỘT PHẢI: KẾT QUẢ ===== -->
+    <section aria-label="Kết quả tìm kiếm">
+        <div class="sr-topline" id="activeFilters">
+            <button type="button" class="sr-toggle" id="toggleFilterBtn" aria-expanded="false" aria-controls="filterSide">⚙️ Bộ lọc</button>
+            <span class="sr-count" role="status">{{ page_obj.paginator.count|default:0 }} kết quả</span>
+
+            {% if category_slug %}
+            <span class="sr-chip">{% for c in categories %}{% if c.slug == category_slug %}{{ c.name }}{% endif %}{% endfor %}
+                <a href="#" data-remove="category" aria-label="Bỏ lọc danh mục">×</a></span>
+            {% endif %}
+            {% if author %}
+            <span class="sr-chip">Tác giả: {{ author }}
+                <a href="#" data-remove="author" aria-label="Bỏ lọc tác giả">×</a></span>
+            {% endif %}
+            {% if class_name %}
+            <span class="sr-chip">Lớp: {{ class_name }}
+                <a href="#" data-remove="class_name" aria-label="Bỏ lọc lớp">×</a></span>
+            {% endif %}
+            {% if date_from or date_to %}
+            <span class="sr-chip" id="dateChip">{{ date_from|default:"…" }} → {{ date_to|default:"…" }}
+                <a href="#" data-remove="date_from,date_to" aria-label="Bỏ lọc thời gian">×</a></span>
+            {% endif %}
         </div>
-        <div>
-            <label>Tác giả / người đăng</label>
-            <input type="text" name="author" value="{{ author }}" placeholder="Tên hoặc email">
+
+        {% for r in page_obj %}
+        <div class="list-card" style="display:flex; gap:16px; align-items:flex-start; padding:16px; background:#fff; border-radius:8px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+            {% if r.object.featured_image %}
+                <img src="{{ r.object.featured_image.url }}" alt="" class="list-thumb" style="width:60px; height:60px; object-fit:cover; border-radius:6px;">
+            {% else %}
+                <a class="list-avatar" href="{{ r.author.get_absolute_url }}" style="width:40px; height:40px; flex:none; background:#0b192c; color:#fff; display:flex; align-items:center; justify-content:center; border-radius:50%; font-weight:bold; text-decoration:none;">
+                    {{ r.author.get_full_name|default:r.author.email|first|upper }}
+                </a>
+            {% endif %}
+
+            <div class="list-body" style="flex:1; min-width:0;">
+                <div class="list-meta" style="font-size:12px; color:#6b7280; margin-bottom:4px;">
+                    <span class="badge" style="background:#e0e7ff; color:#3730a3; padding:2px 6px; border-radius:4px; font-weight:500;">{{ r.type_label }}</span>
+                    <span>· <a class="author-link" href="{{ r.author.get_absolute_url }}" style="color:#4b5563; text-decoration:none;">{{ r.author }}</a></span>
+                    {% if r.author.class_name %}<span>· Lớp {{ r.author.class_name }}</span>{% endif %}
+                    <span>· {{ r.created_at|date:"d/m/Y H:i" }}</span>
+                    {% if r.is_edited %}<span>· <em>đã chỉnh sửa</em></span>{% endif %}
+                </div>
+
+                <h3 class="list-title" style="font-size:16px; font-weight:600; margin:4px 0;">
+                    <a href="{{ r.url }}" style="color:#1f2937; text-decoration:none;">{{ r.object.title }}</a>
+                </h3>
+
+                <p class="list-excerpt" style="font-size:14px; color:#4b5563; margin:0; line-height:1.5;">
+                    {{ r.object.body|striptags|truncatewords:32 }}
+                </p>
+            </div>
         </div>
-        <div>
-            <label>Lớp</label>
-            <input type="text" name="class_name" value="{{ class_name }}" placeholder="VD: 23K5">
+        {% empty %}
+        <div class="card" style="text-align:center; padding:30px; color:#6b7280; background:#fff; border-radius:8px;">
+            <p>{% if has_filters or query %}Không tìm thấy kết quả phù hợp với từ khóa hoặc bộ lọc đã chọn.{% else %}Nhập từ khóa phía trên để bắt đầu tìm kiếm trên toàn hệ thống.{% endif %}</p>
         </div>
-        <div>
-            <label>Từ ngày</label>
-            <input type="date" name="date_from" value="{{ date_from }}">
-        </div>
-        <div>
-            <label>Đến ngày</label>
-            <input type="date" name="date_to" value="{{ date_to }}">
-        </div>
-        <div>
-            <label>&nbsp;</label>
-            <button type="submit" class="btn">Lọc</button>
-            {% if has_filters %}<a href="{% url 'search:results' %}" class="btn btn-secondary">Xóa lọc</a>{% endif %}
-        </div>
-    </form>
+        {% endfor %}
+
+        {% include "_pagination.html" with noun="kết quả" %}
+    </section>
 </div>
 
-{% for r in page_obj %}
-<div class="list-card">
-    {% if r.object.featured_image %}
-        <img src="{{ r.object.featured_image.url }}" alt="" class="list-thumb">
-    {% else %}
-        <a class="list-avatar" href="{{ r.author.get_absolute_url }}">{{ r.author.get_full_name|default:r.author.email|first|upper }}</a>
-    {% endif %}
-    <div class="list-body">
-        <div class="list-meta">
-            <span class="badge">{{ r.type_label }}</span>
-            <span><a class="author-link" href="{{ r.author.get_absolute_url }}">{{ r.author }}</a></span>
-            {% if r.author.class_name %}<span>· Lớp {{ r.author.class_name }}</span>{% endif %}
-            <span>· {{ r.created_at|date:"d/m/Y H:i" }}</span>
-            {% if r.is_edited %}<span>· <em>đã chỉnh sửa</em></span>{% endif %}
-        </div>
-        <h3 class="list-title"><a href="{{ r.url }}">{{ r.object.title }}</a></h3>
-        <p class="list-excerpt">{{ r.object.body|striptags|truncatewords:28 }}</p>
-    </div>
-</div>
-{% empty %}
-<div class="card">
-    <p>{% if has_filters %}Không tìm thấy kết quả phù hợp.{% else %}Nhập từ khóa hoặc chọn bộ lọc để tìm kiếm.{% endif %}</p>
-</div>
-{% endfor %}
+<script>
+(function () {
+    const form = document.getElementById('filterForm');
+    const side = document.getElementById('filterSide');
+    const toggleBtn = document.getElementById('toggleFilterBtn');
+    const customBox = document.getElementById('customDates');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const periodRadios = document.querySelectorAll('input[name="period"]');
 
-{% include "_pagination.html" with noun="kết quả" %}
+    // "period" chỉ để giao diện dùng, không gửi lên server
+    function go() {
+        periodRadios.forEach(r => r.disabled = true);
+        form.submit();
+    }
+    form.addEventListener('submit', () => periodRadios.forEach(r => r.disabled = true));
+
+    // ---------- Khung tìm kiếm cố định: khi cuộn xuống thì thu gọn lại ----------
+    const head = document.getElementById('srHead');
+    const sentinel = document.getElementById('srSentinel');
+    const root = document.documentElement;
+    function syncHeadHeight() { root.style.setProperty('--sr-head-h', head.offsetHeight + 'px'); }
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(([entry]) => {
+            head.classList.toggle('is-stuck', !entry.isIntersecting && entry.boundingClientRect.top < 0);
+            syncHeadHeight();
+        }).observe(sentinel);
+    }
+    if ('ResizeObserver' in window) new ResizeObserver(syncHeadHeight).observe(head);
+    syncHeadHeight();
+
+    // ---------- Mobile: bật/tắt bộ lọc ----------
+    const hasActive = !!document.querySelector('#activeFilters .sr-chip');
+    function setSide(open) {
+        side.classList.toggle('open', open);
+        toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    toggleBtn.addEventListener('click', () => setSide(!side.classList.contains('open')));
+
+    // ---------- Danh mục: chọn là lọc ----------
+    document.querySelectorAll('input[name="category"]').forEach(r => r.addEventListener('change', go));
+
+    // ---------- Thời gian: preset <-> date_from/date_to ----------
+    const iso = d => {
+        const p = n => String(n).padStart(2, '0');
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    };
+    const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
+    const today = iso(new Date());
+    const labels = { '0': 'Hôm nay', '7': '7 ngày qua', '30': '30 ngày qua' };
+
+    function detectPreset() {
+        if (!dateFrom.value && !dateTo.value) return '';
+        if (!dateTo.value || dateTo.value === today) {
+            for (const n of ['0', '7', '30']) {
+                if (dateFrom.value === daysAgo(+n)) return n;
+            }
+        }
+        return 'custom';
+    }
+    function showCustom(on) { customBox.classList.toggle('open', on); }
+
+    const current = detectPreset();
+    periodRadios.forEach(r => { r.checked = (r.value === current); });
+    showCustom(current === 'custom');
+
+    const dateChip = document.getElementById('dateChip');
+    if (dateChip && labels[current]) dateChip.firstChild.textContent = labels[current] + ' ';
+
+    periodRadios.forEach(r => r.addEventListener('change', () => {
+        const v = r.value;
+        if (v === 'custom') { showCustom(true); dateFrom.focus(); return; }
+        showCustom(false);
+        if (v === '') { dateFrom.value = ''; dateTo.value = ''; }
+        else { dateFrom.value = daysAgo(+v); dateTo.value = today; }
+        go();
+    }));
+
+    // ---------- Lớp: tự viết hoa ----------
+    document.getElementById('classInput').addEventListener('blur', e => {
+        e.target.value = e.target.value.trim().toUpperCase();
+    });
+
+    // ---------- Tab: giữ nguyên bộ lọc, chỉ đổi type, về trang 1 ----------
+    document.querySelectorAll('.sr-tab').forEach(a => {
+        const params = new URLSearchParams(window.location.search);
+        params.delete('page');
+        params.delete('show_filter');
+        if (a.dataset.type) params.set('type', a.dataset.type); else params.delete('type');
+        a.href = '?' + params.toString();
+    });
+
+    // ---------- Chip: bấm × để bỏ từng bộ lọc ----------
+    document.querySelectorAll('#activeFilters [data-remove]').forEach(a => {
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            const params = new URLSearchParams(window.location.search);
+            a.dataset.remove.split(',').forEach(k => params.delete(k));
+            params.delete('page');
+            window.location.search = params.toString();
+        });
+    });
+
+    // ---------- Bôi sáng từ khóa (đã escape ký tự đặc biệt của regex) ----------
+    const query = "{{ query|escapejs }}".trim();
+    if (!query) return;
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const terms = query.split(/\s+/).filter(t => t.length >= 2).map(esc);
+    if (!terms.length) return;
+    const regex = new RegExp('(' + terms.join('|') + ')', 'gi');
+    document.querySelectorAll('.list-excerpt, .list-title a').forEach(el => {
+        el.innerHTML = el.innerHTML.replace(regex,
+            '<mark style="background-color:#fef08a; padding:0 2px; border-radius:2px;">$1</mark>');
+    });
+})();
+</script>
 {% endblock %}
