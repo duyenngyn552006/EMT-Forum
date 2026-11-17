@@ -1,48 +1,171 @@
+
 {% extends "base.html" %}
+
 {% block title %}{{ announcement.title }}{% endblock %}
+
 {% block content %}
 <div class="card">
-    {% if announcement.is_pinned %}<span class="pill">📌 Đã ghim</span>{% endif %}
-    <span class="pill">{{ announcement.get_kind_display }}</span>
-    <h1>{{ announcement.title }}</h1>
-    <p><a class="author-link" href="{{ announcement.author.get_absolute_url }}">{{ announcement.author }}</a> · {{ announcement.created_at|date:"d/m/Y H:i" }} · 👁️ {{ announcement.view_count }} lượt xem
-        {% if announcement.is_edited %} · <em>Đã chỉnh sửa lúc {{ announcement.updated_at|date:"d/m/Y H:i" }}</em>{% endif %}</p>
-    {% if announcement.kind == "event" and announcement.event_datetime %}
-        <p>🗓️ <strong>Thời gian diễn ra:</strong> {{ announcement.event_time_display }}</p>
+
+    {% if announcement.is_pinned %}
+        <span class="pill">📌 Đã ghim</span>
     {% endif %}
-    {% if announcement.featured_image %}<img src="{{ announcement.featured_image.url }}" alt="" style="max-width:100%; border-radius:10px; margin-bottom:12px;">{% endif %}
-    <div class="rich-content">{{ announcement.body|safe }}</div>
+
+    <span class="pill">{{ announcement.get_kind_display }}</span>
+
+    <h1>{{ announcement.title }}</h1>
+
+    <p>
+        <a class="author-link" href="{{ announcement.author.get_absolute_url }}">
+            {{ announcement.author }}
+        </a>
+        · {{ announcement.created_at|date:"d/m/Y H:i" }}
+        · 👁️ {{ announcement.view_count }} lượt xem
+
+        {% if announcement.is_edited %}
+            · <em>Đã chỉnh sửa lúc {{ announcement.updated_at|date:"d/m/Y H:i" }}</em>
+        {% endif %}
+    </p>
+
+    {% if announcement.kind == "event" %}
+        {% if announcement.event_datetime %}
+            <p>
+                🗓️ <strong>Thời gian diễn ra:</strong>
+                {{ announcement.event_time_display }}
+            </p>
+        {% endif %}
+
+        {% if announcement.deadline_at %}
+            <p>
+                ⏰ <strong>Hạn đăng ký:</strong>
+                {{ announcement.deadline_at|date:"d/m/Y H:i" }}
+            </p>
+        {% endif %}
+
+        <p>
+            <strong>👥 Số người đã đăng ký:</strong>
+            {{ announcement.registrations.count }}
+        </p>
+
+        {% if user.is_authenticated %}
+            {% if user_registered %}
+                <p>✅ Bạn đã đăng ký tham gia sự kiện này.</p>
+            {% elif announcement.deadline_at and announcement.deadline_at <= now %}
+                <p>Đã hết hạn đăng ký sự kiện.</p>
+            {% else %}
+                <form method="post" action="{% url 'announcements:register_event' announcement.pk %}">
+                    {% csrf_token %}
+                    <button class="btn" type="submit">Đăng ký tham gia</button>
+                </form>
+            {% endif %}
+        {% else %}
+            <p>Vui lòng đăng nhập để đăng ký tham gia sự kiện.</p>
+        {% endif %}
+    {% endif %}
+
+    {% if announcement.featured_image %}
+        <img
+            src="{{ announcement.featured_image.url }}"
+            alt=""
+            onclick="openAnnouncementImage(this.src)"
+            style="max-width:100%; border-radius:10px; margin-bottom:12px; cursor:zoom-in;"
+        >
+    {% endif %}
+
+    <div class="rich-content">
+        {{ announcement.body|safe }}
+    </div>
 
     {% for att in announcement.attachments.all %}
-        <img src="{{ att.image.url }}" alt="{{ att.caption }}" style="max-width:100%; margin-bottom:8px;">
+        <img
+            src="{{ att.image.url }}"
+            alt="{{ att.caption }}"
+            onclick="openAnnouncementImage(this.src)"
+            style="max-width:100%; margin-bottom:8px; cursor:zoom-in; border-radius:8px;"
+        >
     {% endfor %}
 
     {% if user.is_authenticated %}
         <div class="post-menu-wrapper">
-            <button type="button" class="post-menu-btn" onclick="togglePostMenu(event)" aria-label="Tùy chọn">•••</button>
+            <button
+                type="button"
+                class="post-menu-btn"
+                onclick="togglePostMenu(event)"
+                aria-label="Tùy chọn"
+            >•••</button>
+
             <div class="post-menu-dropdown" id="postMenuDropdown" hidden>
+
                 {% if user == announcement.author or user.role == "staff" %}
                     <a href="{% url 'announcements:edit' announcement.pk %}">✏️ Sửa</a>
                 {% endif %}
+
                 {% if user.role in "lecturer,bch,staff" %}
                     {% if announcement.is_pinned %}
-                        <form method="post" action="{% url 'announcements:unpin' announcement.pk %}">{% csrf_token %}<button type="submit">📌 Bỏ ghim</button></form>
+                        <form method="post" action="{% url 'announcements:unpin' announcement.pk %}">
+                            {% csrf_token %}
+                            <button type="submit">📌 Bỏ ghim</button>
+                        </form>
                     {% else %}
-                        <form method="post" action="{% url 'announcements:pin' announcement.pk %}">{% csrf_token %}<button type="submit">📌 Ghim</button></form>
+                        <form method="post" action="{% url 'announcements:pin' announcement.pk %}">
+                            {% csrf_token %}
+                            <button type="submit">📌 Ghim</button>
+                        </form>
                     {% endif %}
                 {% endif %}
-                <form method="post" action="{% url 'interactions:toggle_save' 'announcement' announcement.pk %}">{% csrf_token %}<button type="submit">{% if user_has_saved %}🔖 Đã lưu{% else %}🔖 Lưu{% endif %}</button></form>
-                <a class="danger-text" href="{% url 'moderation:create_report' 'announcement' announcement.pk %}">🚩 Báo cáo vi phạm</a>
+
+                <form method="post" action="{% url 'interactions:toggle_save' 'announcement' announcement.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">
+                        {% if user_has_saved %}🔖 Đã lưu{% else %}🔖 Lưu{% endif %}
+                    </button>
+                </form>
+
+                <a class="danger-text" href="{% url 'moderation:create_report' 'announcement' announcement.pk %}">
+                    🚩 Báo cáo vi phạm
+                </a>
             </div>
         </div>
+
         {% if user.role == "staff" and announcement.history.count %}
-            <details style="margin-top:12px;"><summary>Lịch sử chỉnh sửa ({{ announcement.history.count }})</summary>
+            <details style="margin-top:12px;">
+                <summary>Lịch sử chỉnh sửa ({{ announcement.history.count }})</summary>
+
                 {% for h in announcement.history.all %}
-                    <p><strong>{{ h.editor }}</strong> - {{ h.edited_at|date:"d/m/Y H:i" }}<br>{{ h.title }}</p>
+                    <p>
+                        <strong>{{ h.editor }}</strong>
+                        - {{ h.edited_at|date:"d/m/Y H:i" }}
+                        <br>
+                        {{ h.title }}
+                    </p>
                 {% endfor %}
             </details>
         {% endif %}
     {% endif %}
+
 </div>
+
+<!-- Phóng to ảnh -->
+<div
+    id="announcementImageModal"
+    onclick="this.style.display='none'"
+    style="display:none; position:fixed; z-index:9999; inset:0;
+           background:rgba(0,0,0,0.9); justify-content:center;
+           align-items:center; padding:20px; cursor:zoom-out;"
+>
+    <img
+        id="announcementImagePreview"
+        alt="Ảnh phóng to"
+        style="max-width:95%; max-height:90vh; object-fit:contain;"
+    >
+</div>
+
+<script>
+function openAnnouncementImage(imageUrl) {
+    document.getElementById("announcementImagePreview").src = imageUrl;
+    document.getElementById("announcementImageModal").style.display = "flex";
+}
+</script>
+
 {% include "interactions/_interactions.html" %}
+
 {% endblock %}

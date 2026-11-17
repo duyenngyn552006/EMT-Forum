@@ -35,9 +35,19 @@ class AnnouncementForm(forms.ModelForm):
         required=False,
     )
 
+    deadline_at = forms.SplitDateTimeField(
+        label="Hạn chót đăng ký / nộp",
+        widget=forms.SplitDateTimeWidget(
+            date_attrs={"type": "date", "aria-label": "Ngày hết hạn"},
+            time_attrs={"type": "time", "aria-label": "Giờ hết hạn"},
+        ),
+        required=False,
+        help_text="Không bắt buộc. Hệ thống sẽ nhắc sinh viên trước hạn 2 ngày, 1 ngày và 3 giờ.",
+    )
+
     class Meta:
         model = Announcement
-        fields = ["kind", "title", "body", "featured_image", "event_datetime", "event_end_datetime"]
+        fields = ["kind", "title", "body", "featured_image", "event_datetime", "event_end_datetime", "deadline_at"]
         labels = {"kind": "Loại thông báo", "title": "Tiêu đề", "body": "Nội dung"}
 
     def __init__(self, *args, user=None, **kwargs):
@@ -58,9 +68,16 @@ class AnnouncementForm(forms.ModelForm):
         is_event = cleaned_data.get("kind") == Announcement.Kind.EVENT
         start = cleaned_data.get("event_datetime")
         end = cleaned_data.get("event_end_datetime")
+        deadline = cleaned_data.get("deadline_at")
 
         if is_event and not start:
             self.add_error("event_datetime", "Bắt buộc nhập thời gian diễn ra sự kiện đối với thông báo loại sự kiện.")
+
+        if is_event and deadline and start and deadline >= start:
+            self.add_error(
+                "deadline_at",
+                "Hạn chót đăng ký phải trước thời điểm bắt đầu diễn ra sự kiện.",
+            )
 
         if is_event and cleaned_data.get("event_time_mode") == EVENT_MODE_RANGE:
             if start and not end:

@@ -26,6 +26,8 @@ class Announcement(ModeratedContentMixin, PinnableMixin, models.Model):
     # Thoi diem ket thuc - chi co khi su kien keo dai theo khoang thoi gian;
     # NULL = su kien chi co 1 moc thoi gian (event_datetime)
     event_end_datetime = models.DateTimeField("Thời điểm kết thúc sự kiện", null=True, blank=True)
+    # Han chot dang ky/nop ho so; khac voi thoi gian dien ra su kien.
+    deadline_at = models.DateTimeField("Hạn chót", null=True, blank=True)
 
     class Meta:
         ordering = ["-is_pinned", "-created_at"]
@@ -74,3 +76,28 @@ class AnnouncementEditHistory(models.Model):
 
     def __str__(self):
         return f"{self.announcement_id} @ {self.edited_at:%Y-%m-%d %H:%M}"
+
+class EventRegistration(models.Model):
+    announcement = models.ForeignKey(
+        Announcement,
+        on_delete=models.CASCADE,
+        related_name="registrations"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="event_registrations"
+    )
+    registered_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["announcement", "user"],
+                name="unique_event_registration"
+            )
+        ]
+        ordering = ["-registered_at"]
+
+    def __str__(self):
+        return f"{self.user} - {self.announcement.title}"

@@ -10,4 +10,6 @@ urlpatterns = [
     path("<int:pk>/click/", views.click_notification, name="click"),
     path("read-all/", views.mark_all_read, name="mark_all_read"),
     path("preferences/", views.preferences, name="preferences"),
+    path("deadlines/", views.deadline_list, name="deadlines"),
+    path("deadlines/<int:announcement_pk>/complete/", views.complete_deadline, name="complete_deadline"),
 ]

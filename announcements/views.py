@@ -10,9 +10,10 @@ from interactions.utils import annotate_interaction_counts
 
 from . import services
 from .forms import AnnouncementAttachmentFormSet, AnnouncementForm
-from .models import Announcement
-
-
+from .models import Announcement, EventRegistration
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 def _can_post_announcement(user):
     return user.is_authenticated and user.role in (User.Role.STAFF, User.Role.BCH, User.Role.LECTURER)
 
@@ -64,6 +65,14 @@ class AnnouncementDetailView(DetailView):
         ctx["model_key"] = "announcement"
         ctx["comments"] = get_top_level_comments(content_type, self.object.pk, viewer=self.request.user)
         ctx.update(get_interaction_context(self.request.user, self.object))
+
+        ctx["now"] = timezone.now()
+        ctx["user_registered"] = (
+            self.object.registrations.filter(user=self.request.user).exists()
+            if self.request.user.is_authenticated
+            else False
+        )
+
         return ctx
 
 
@@ -88,6 +97,7 @@ def announcement_create(request):
                 body=form.cleaned_data["body"],
                 event_datetime=form.cleaned_data.get("event_datetime"),
                 event_end_datetime=form.cleaned_data.get("event_end_datetime"),
+                deadline_at=form.cleaned_data.get("deadline_at"),
                 featured_image=form.cleaned_data.get("featured_image"),
             )
             formset = AnnouncementAttachmentFormSet(request.POST, request.FILES, instance=announcement)
@@ -121,6 +131,7 @@ def announcement_edit(request, pk):
                 body=form.cleaned_data["body"],
                 event_datetime=form.cleaned_data.get("event_datetime"),
                 event_end_datetime=form.cleaned_data.get("event_end_datetime"),
+                deadline_at=form.cleaned_data.get("deadline_at"),
                 featured_image=form.cleaned_data.get("featured_image"),
             )
             formset.save()
@@ -159,4 +170,25 @@ def announcement_unpin(request, pk):
         return redirect(announcement.get_absolute_url())
     services.unpin_announcement(announcement, request.user)
     messages.success(request, "Đã bỏ ghim thông báo.")
+    return redirect(announcement.get_absolute_url())
+@login_required
+@require_POST
+def register_event(request, pk):
+    announcement = get_object_or_404(
+        Announcement,
+        pk=pk,
+        kind=Announcement.Kind.EVENT,
+        status=ContentStatus.PUBLISHED
+    )
+
+    if announcement.deadline_at and announcement.deadline_at <= timezone.now():
+        messages.error(request, "Sự kiện đã hết hạn đăng ký.")
+        return redirect(announcement.get_absolute_url())
+
+    EventRegistration.objects.get_or_create(
+        announcement=announcement,
+        user=request.user
+    )
+
+    messages.success(request, "Bạn đã đăng ký tham gia sự kiện thành công.")
     return redirect(announcement.get_absolute_url())

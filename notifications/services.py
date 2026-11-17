@@ -18,6 +18,7 @@ _PREF_FIELD_BY_VERB = {
     # Cau tra loi duoc chon la ket qua cua 1 binh luan -> gop chung cai dat "binh luan"
     Notification.Verb.ANSWER_ACCEPTED: "notify_on_comment",
     Notification.Verb.FOLLOW_UPDATE: "notify_on_follow",
+    Notification.Verb.DEADLINE_REMINDER: "notify_on_deadline",
 }
 
 

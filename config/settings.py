@@ -12,7 +12,7 @@ env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("SECRET_KEY", default="django-insecure-change-me")
-DEBUG = env.bool("DEBUG", default=False)
+DEBUG = env.bool("DEBUG", default=True)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
 # Origin HTTPS được tin cậy cho form POST (đăng nhập/đăng ký) khi deploy, vd https://ntmmduyen55.pythonanywhere.com
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
@@ -196,6 +196,13 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Ho_Chi_Minh"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+# Deadline Radar: Celery Beat chay tac vu kiem tra han chot moi gio.
+CELERY_BEAT_SCHEDULE = {
+    "send-announcement-deadline-reminders-hourly": {
+        "task": "notifications.tasks.send_deadline_reminders",
+        "schedule": 3600.0,
+    },
+}
 # Chua co Redis server tren may dev - chay task Celery dong bo (trong-process) mac dinh
 # de app hoat dong duoc ngay khi demo local. Doi thanh False + chay Redis va celery worker
 # that khi trien khai (xem README).
