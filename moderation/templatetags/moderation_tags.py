@@ -2,7 +2,7 @@
 module moderation va trang Dashboard."""
 from django import template
 
-from moderation.services import pending_counts
+from moderation.services import hidden_count, pending_counts
 
 register = template.Library()
 
@@ -12,6 +12,7 @@ _ACTIVE_BY_URL = {
     "moderation": {
         "report_list": "reports", "report_resolve": "reports",
         "pending_content_list": "content", "approve_content": "content", "reject_content": "content",
+        "hidden_content_list": "hidden", "restore_content": "hidden",
         "appeal_list": "appeals", "appeal_review": "appeals",
         "keyword_list": "keywords", "keyword_create": "keywords", "keyword_edit": "keywords", "keyword_delete": "keywords",
         "log_list": "logs",
@@ -30,5 +31,6 @@ def moderation_sidebar(context):
     return {
         "active": active,
         "counts": counts,
+        "hidden_count": hidden_count(),
         "total_pending": sum(counts.values()),
     }

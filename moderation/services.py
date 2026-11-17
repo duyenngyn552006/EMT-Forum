@@ -60,3 +60,16 @@ def pending_counts():
         "content": content,
         "appeals": AccountAppeal.objects.filter(status=AccountAppeal.Status.PENDING).count(),
     }
+
+
+def hidden_count():
+    """So noi dung dang bi an tam thoi (cho Giao vu xac minh de khoi phuc hoac giu nguyen)."""
+    from django.apps import apps
+
+    from config.mixins import ContentStatus
+    from interactions.utils import ALLOWED_MODELS
+
+    return sum(
+        apps.get_model(app_label, model_name).objects.filter(status=ContentStatus.HIDDEN).count()
+        for app_label, model_name in ALLOWED_MODELS.values()
+    )

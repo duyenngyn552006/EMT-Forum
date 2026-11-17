@@ -22,6 +22,11 @@
             <span>Duyệt nội dung</span>
             {% if counts.content %}<span class="mod-side-count" aria-label="{{ counts.content }} đang chờ">{{ counts.content }}</span>{% endif %}
         </a>
+        <a class="mod-side-link{% if active == 'hidden' %} active{% endif %}" href="{% url 'moderation:hidden_content_list' %}"{% if active == 'hidden' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            <span>Nội dung đã ẩn</span>
+            {% if hidden_count %}<span class="mod-side-count muted" aria-label="{{ hidden_count }} nội dung đang ẩn">{{ hidden_count }}</span>{% endif %}
+        </a>
         <a class="mod-side-link{% if active == 'appeals' %} active{% endif %}" href="{% url 'moderation:appeal_list' %}"{% if active == 'appeals' %} aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
             <span>Kháng nghị</span>
