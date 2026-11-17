@@ -26,13 +26,22 @@ class ReportForm(forms.ModelForm):
 
 
 class ReportResolveForm(forms.Form):
+    # UC-8.16 - "Bo qua" = ket luan khong vi pham (UC-K02); 3 bien phap con lai ap dung khi co vi pham,
+    # moi lan chi chon dung 1 bien phap, theo muc do vi pham tu nhe den nang.
     ACTION_CHOICES = [
-        ("dismiss", "Bỏ qua báo cáo"),
-        ("hide", "Ẩn nội dung"),
-        ("delete", "Xóa nội dung"),
+        ("dismiss", "Bỏ qua báo cáo (không vi phạm)"),
+        ("warn", "Cảnh báo người đăng (vi phạm nhẹ, giữ nội dung)"),
+        ("hide", "Tạm ẩn nội dung (cần xác minh thêm, có thể khôi phục)"),
+        ("delete", "Xóa nội dung (vi phạm rõ ràng, không khôi phục)"),
     ]
     action = forms.ChoiceField(choices=ACTION_CHOICES, label="Hướng xử lý")
-    resolution_note = forms.CharField(widget=forms.Textarea, required=True, label="Ghi chú xử lý")
+    resolution_note = forms.CharField(widget=forms.Textarea, required=True, label="Lý do xử lý")
+
+    def __init__(self, *args, content_missing=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if content_missing:
+            # UC-8.16 ngoai le 3a: noi dung da bi nguoi dang xoa -> chi con dong bao cao
+            self.fields["action"].choices = [self.ACTION_CHOICES[0]]
 
 
 class AccountAppealForm(forms.ModelForm):

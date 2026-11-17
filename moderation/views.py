@@ -1,6 +1,10 @@
+from datetime import timedelta
+
+from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
@@ -8,7 +12,7 @@ from django_ratelimit.decorators import ratelimit
 
 from accounts.models import User
 from config.mixins import ContentStatus
-from interactions.utils import resolve_target
+from interactions.utils import ALLOWED_MODELS, resolve_target
 from notifications.models import Notification
 from notifications.services import notify
 
@@ -234,16 +238,40 @@ def report_list(request):
 
 _RESULT_TEXT = {
     "dismiss": "không phát hiện vi phạm, nội dung được giữ nguyên",
-    "hide": "nội dung đã bị ẩn",
+    "warn": "đã gửi cảnh báo đến người đăng",
+    "hide": "nội dung đã bị tạm ẩn",
     "delete": "nội dung đã bị xóa",
 }
 
+# Cac hanh dong tinh la "mot lan vi pham" cua nguoi dang (do Giao vu xu ly, khong tinh bo loc tu dong)
+_VIOLATION_ACTIONS = (
+    ModerationLog.Action.WARN, ModerationLog.Action.HIDE,
+    ModerationLog.Action.DELETE, ModerationLog.Action.REJECT_CONTENT,
+)
+VIOLATION_WINDOW_DAYS = 90
+
+
+def _violation_history(user):
+    """Lich su vi pham 90 ngay cua nguoi dang - giup Giao vu chon bien phap nang hon khi tai pham."""
+    if user is None:
+        return None
+    since = timezone.now() - timedelta(days=VIOLATION_WINDOW_DAYS)
+    logs = ModerationLog.objects.filter(
+        target_user=user, actor__isnull=False, action__in=_VIOLATION_ACTIONS, created_at__gte=since,
+    )
+    return {
+        "user": user,
+        "warnings": logs.filter(action=ModerationLog.Action.WARN).count(),
+        "total": logs.count(),
+        "days": VIOLATION_WINDOW_DAYS,
+    }
+
 
 def _notify_report_result(actor, obj, reports, action, note):
-    """M3 - bao ket qua xu ly cho tung nguoi bao cao va cho tac gia noi dung (neu bi an/xoa)."""
+    """Bao ket qua xu ly cho tung nguoi bao cao va cho nguoi dang (moi bien phap deu bao nguoi dang)."""
     label = _content_label(obj, limit=60)
-    # Noi dung bi an/xoa thi nguoi khac khong xem duoc nua -> khong gan lien ket
-    link_target = obj if action == "dismiss" else None
+    # Noi dung con hien thi (bo qua / canh bao) thi gan lien ket; bi an/xoa thi khong
+    link_target = obj if action in ("dismiss", "warn") else None
     if link_target is not None and not hasattr(link_target, "get_absolute_url"):
         link_target = getattr(link_target, "content_object", None)
 
@@ -259,45 +287,64 @@ def _notify_report_result(actor, obj, reports, action, note):
         )
 
     author = getattr(obj, "author", None)
-    if action != "dismiss" and author is not None:
-        verb_text = "bị ẩn" if action == "hide" else "bị xóa"
-        categories = ", ".join(sorted({r.get_category_display() for r in reports}))
-        notify(
-            recipient=author, verb=Notification.Verb.MODERATION, actor=actor,
-            message=f"Nội dung \"{label}\" của bạn đã {verb_text} do vi phạm ({categories}). Ghi chú: {note}"[:255],
-        )
+    if action == "dismiss" or author is None:
+        return
+    categories = ", ".join(sorted({r.get_category_display() for r in reports}))
+    if action == "warn":
+        message = (f"⚠️ Bạn bị cảnh báo vì nội dung \"{label}\" ({categories}). Ghi chú: {note}. "
+                   "Nội dung vẫn được giữ lại; nếu tái phạm có thể bị ẩn, xóa nội dung hoặc khóa tài khoản.")
+    else:
+        verb_text = "bị tạm ẩn" if action == "hide" else "bị xóa"
+        message = f"Nội dung \"{label}\" của bạn đã {verb_text} do vi phạm ({categories}). Ghi chú: {note}"
+    notify(recipient=author, verb=Notification.Verb.MODERATION, actor=actor,
+           message=message[:255], content_object=link_target)
+
+
+# Bien phap -> (trang thai moi cua noi dung hoac None neu giu nguyen, hanh dong ghi nhat ky)
+_MEASURES = {
+    "warn": (None, ModerationLog.Action.WARN),
+    "hide": (ContentStatus.HIDDEN, ModerationLog.Action.HIDE),
+    "delete": (ContentStatus.REMOVED, ModerationLog.Action.DELETE),
+}
 
 
 @user_passes_test(_is_staff, login_url="home")
 def report_resolve(request, pk):
+    """UC-K02 Xu ly bao cao + UC-8.16 Kiem duyet noi dung vi pham tren cung 1 man hinh:
+    "Bo qua" = ket luan khong vi pham; Canh bao / Tam an / Xoa = bien phap xu ly vi pham."""
     report = get_object_or_404(Report, pk=pk)
-    # M2 - xu ly 1 lan cho moi bao cao dang mo cua cung noi dung
+    # Xu ly 1 lan cho moi bao cao dang mo cua cung noi dung
     related_reports = list(
         Report.objects.filter(
             content_type=report.content_type, object_id=report.object_id, status__in=Report.OPEN_STATUSES,
         ).select_related("reporter").order_by("-created_at")
     ) or [report]
     obj = report.content_object
+    content_missing = obj is None
 
     if request.method == "POST":
-        form = ReportResolveForm(request.POST)
+        action = request.POST.get("action")
+        # UC-8.16 ngoai le 3a: noi dung da bi nguoi dang xoa truoc khi Giao vu ap dung bien phap
+        if content_missing and action in _MEASURES:
+            messages.error(request, "Nội dung không còn tồn tại (người đăng đã xóa). Thao tác đã bị hủy, "
+                                    "bạn chỉ có thể đóng báo cáo bằng \"Bỏ qua báo cáo\".")
+            return redirect("moderation:report_resolve", pk=report.pk)
+
+        form = ReportResolveForm(request.POST, content_missing=content_missing)
         if form.is_valid():
             action = form.cleaned_data["action"]
             note = form.cleaned_data["resolution_note"]
 
-            if action == "hide" and obj is not None and hasattr(obj, "status"):
-                obj.status = ContentStatus.HIDDEN
-                obj.save(update_fields=["status"])
-                log_action(actor=request.user, action=ModerationLog.Action.HIDE, reason=note,
-                           target_user=getattr(obj, "author", None), content_object=obj)
-            elif action == "delete" and obj is not None and hasattr(obj, "status"):
-                obj.status = ContentStatus.REMOVED
-                obj.save(update_fields=["status"])
-                log_action(actor=request.user, action=ModerationLog.Action.DELETE, reason=note,
+            if action in _MEASURES:
+                new_content_status, log_type = _MEASURES[action]
+                if new_content_status is not None:
+                    obj.status = new_content_status
+                    obj.save(update_fields=["status"])
+                log_action(actor=request.user, action=log_type, reason=note,
                            target_user=getattr(obj, "author", None), content_object=obj)
 
             now = timezone.now()
-            new_status = Report.Status.RESOLVED if action != "dismiss" else Report.Status.DISMISSED
+            new_status = Report.Status.DISMISSED if action == "dismiss" else Report.Status.RESOLVED
             for item in related_reports:
                 item.status = new_status
                 item.handled_by = request.user
@@ -312,13 +359,15 @@ def report_resolve(request, pk):
             )
             return redirect("moderation:report_list")
     else:
-        form = ReportResolveForm()
+        form = ReportResolveForm(content_missing=content_missing)
     return render(
         request, "moderation/report_resolve_form.html",
         {
             "form": form, "report": report, "related_reports": related_reports,
             "type_name": _type_name(report.content_type),
             "object": obj, "object_label": _content_label(obj), "object_url": _content_url(obj),
+            "content_missing": content_missing,
+            "history": _violation_history(getattr(obj, "author", None)),
             "reporter_count": len({r.reporter_id for r in related_reports}),
         },
     )
@@ -478,3 +527,66 @@ def appeal_review(request, pk):
     else:
         form = AppealReviewForm()
     return render(request, "moderation/appeal_review.html", {"form": form, "appeal": appeal, "violation_history": violation_history})
+
+
+# ---------------- Noi dung da an & khoi phuc ----------------
+# "An" la xu ly tam thoi khi chua chac chan vi pham: Giao vu xac minh xong co the khoi phuc.
+# "Xoa" (removed) la vi pham ro rang, khong khoi phuc.
+
+
+def _hidden_items():
+    """Moi noi dung dang o trang thai 'hidden' (bai dien dan, thong bao, bai nhom, binh luan),
+    kem ly do va thoi diem an lay tu ban ghi HIDE moi nhat trong ModerationLog."""
+    from django.contrib.contenttypes.models import ContentType
+
+    items = []
+    for model_key, (app_label, model_name) in ALLOWED_MODELS.items():
+        model = apps.get_model(app_label, model_name)
+        content_type = ContentType.objects.get_for_model(model)
+        for obj in model.objects.filter(status=ContentStatus.HIDDEN).select_related("author"):
+            log = (
+                ModerationLog.objects.filter(
+                    action=ModerationLog.Action.HIDE, content_type=content_type, object_id=obj.pk,
+                ).select_related("actor").order_by("-created_at").first()
+            )
+            items.append({
+                "model_key": model_key, "object": obj, "type_name": _type_name(content_type),
+                "label": _content_label(obj), "url": _content_url(obj), "author": obj.author,
+                "hidden_at": log.created_at if log else None,
+                "hidden_by": log.actor if log else None,
+                "reason": log.reason if log else "",
+            })
+    # Noi dung an lau nhat len dau: can xac minh truoc
+    items.sort(key=lambda i: (i["hidden_at"] is None, i["hidden_at"] or timezone.now()))
+    return items
+
+
+@user_passes_test(_is_staff, login_url="home")
+def hidden_content_list(request):
+    return render(request, "moderation/hidden_content_list.html", {"items": _hidden_items()})
+
+
+@user_passes_test(_is_staff, login_url="home")
+@require_POST
+def restore_content(request, model_key, object_id):
+    _content_type, obj = resolve_target(model_key, object_id)
+    if getattr(obj, "status", None) != ContentStatus.HIDDEN:
+        messages.error(request, "Chỉ khôi phục được nội dung đang ở trạng thái \"Đã ẩn\".")
+        return redirect("moderation:hidden_content_list")
+
+    note = (request.POST.get("note") or "").strip() or "Đã xác minh, nội dung không vi phạm."
+    obj.status = ContentStatus.PUBLISHED
+    obj.save(update_fields=["status"])
+    log_action(actor=request.user, action=ModerationLog.Action.RESTORE, reason=note,
+               target_user=getattr(obj, "author", None), content_object=obj)
+
+    label = _content_label(obj, limit=60)
+    author = getattr(obj, "author", None)
+    if author is not None:
+        notify(
+            recipient=author, verb=Notification.Verb.MODERATION, actor=request.user,
+            message=f"Nội dung \"{label}\" của bạn đã được khôi phục. Ghi chú: {note}"[:255],
+            content_object=obj if hasattr(obj, "get_absolute_url") else getattr(obj, "content_object", None),
+        )
+    messages.success(request, f"Đã khôi phục \"{label}\".")
+    return redirect("moderation:hidden_content_list")

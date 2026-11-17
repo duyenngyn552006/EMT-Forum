@@ -96,6 +96,7 @@ def _format_duration(hours):
 
 # Nhom hanh dong trong ModerationLog -> cot cua bang "Hoat dong xu ly" (D1)
 _ACTIVITY_COLUMNS = [
+    ("warn", "Cảnh báo người đăng", (ModerationLog.Action.WARN,)),
     ("content", "Duyệt / từ chối nội dung", (ModerationLog.Action.APPROVE_CONTENT, ModerationLog.Action.REJECT_CONTENT)),
     ("hide_delete", "Ẩn / xóa nội dung", (ModerationLog.Action.HIDE, ModerationLog.Action.DELETE)),
     ("accounts", "Khóa / mở khóa tài khoản", (ModerationLog.Action.LOCK_ACCOUNT, ModerationLog.Action.UNLOCK_ACCOUNT)),

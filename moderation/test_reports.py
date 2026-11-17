@@ -142,7 +142,7 @@ class ReportResultNotificationTests(ReportFeatureTestBase):
         self._report(self.reporter1, Report.Category.SPAM)
         self._resolve("hide")
         note = Notification.objects.get(recipient=self.author)
-        self.assertIn("bị ẩn", note.message)
+        self.assertIn("bị tạm ẩn", note.message)
         self.assertIn("Spam, quảng cáo", note.message)
 
     def test_author_not_notified_when_dismissed(self):

@@ -1,11 +1,33 @@
 {% extends "moderation/base_moderation.html" %}
 {% block title %}Xử lý báo cáo{% endblock %}
 {% block mod_content %}
+<style>
+    .resolve-alert { padding: 10px 14px; border-radius: 10px; background: #eef6ff; border: 1px solid #cfe2fb; margin: 10px 0 14px; }
+    .resolve-alert.warn { background: #fff7e6; border-color: #f5d48c; }
+    .resolve-alert.danger { background: #fdecec; border-color: #f5b5b5; }
+    .measure-guide { font-size: 13.5px; margin: 6px 0 12px; padding-left: 18px; }
+    html[data-theme="dark"] .resolve-alert { background: #13233d; border-color: #2c4a75; }
+    html[data-theme="dark"] .resolve-alert.warn { background: #3a2c0f; border-color: #8a6a1e; }
+    html[data-theme="dark"] .resolve-alert.danger { background: #3d1518; border-color: #8a2c2c; }
+</style>
 <div class="card">
     <h1>Xử lý báo cáo #{{ report.pk }}</h1>
     <p>Nội dung: <span class="pill">{{ type_name }}</span>
         {% if object_url %}<a href="{{ object_url }}" target="_blank">{{ object_label }}</a>{% else %}{{ object_label }}{% endif %}
     </p>
+    {% if content_missing %}
+        <p class="resolve-alert danger">⚠️ <strong>Nội dung không còn tồn tại</strong>: người đăng đã tự xóa. Không thể áp dụng biện pháp xử lý, bạn chỉ có thể đóng báo cáo bằng "Bỏ qua báo cáo".</p>
+    {% elif history %}
+        <p class="resolve-alert{% if history.total %} warn{% endif %}">
+            Người đăng <strong>{{ history.user }}</strong>:
+            {% if history.total %}
+                đã bị cảnh báo <strong>{{ history.warnings }} lần</strong>, bị xử lý vi phạm tổng cộng <strong>{{ history.total }} lần</strong> trong {{ history.days }} ngày qua.
+                <a href="{% url 'moderation:log_list' %}?user={{ history.user.pk }}" target="_blank">Xem lịch sử vi phạm</a>
+            {% else %}
+                chưa bị xử lý vi phạm lần nào trong {{ history.days }} ngày qua.
+            {% endif %}
+        </p>
+    {% endif %}
     <p><strong>{{ reporter_count }} người báo cáo</strong> ({{ related_reports|length }} báo cáo đang chờ):</p>
     <div class="table-responsive">
         <table>
@@ -22,7 +44,14 @@
             </tbody>
         </table>
     </div>
-    <p class="helptext" style="margin:12px 0;">Kết quả xử lý áp dụng cho tất cả báo cáo trên. Hệ thống tự gửi thông báo kết quả cho người báo cáo, và cho tác giả nếu nội dung bị ẩn hoặc xóa.</p>
+    <p class="helptext" style="margin:12px 0 4px;">Chọn <strong>một</strong> hướng xử lý theo mức độ vi phạm. Kết quả áp dụng cho tất cả báo cáo trên; hệ thống tự ghi nhật ký và gửi thông báo cho người báo cáo và người đăng.</p>
+    {% if not content_missing %}
+    <ul class="measure-guide">
+        <li><strong>Cảnh báo người đăng</strong>: vi phạm nhẹ, nội dung không gây hại (đăng sai chuyên mục, lời lẽ chưa phù hợp, đăng trùng).</li>
+        <li><strong>Tạm ẩn</strong>: chưa chắc chắn, cần xác minh thêm; khôi phục được ở trang "Nội dung đã ẩn".</li>
+        <li><strong>Xóa</strong>: vi phạm rõ ràng, gây hại cho người khác (spam, lừa đảo, xúc phạm, quấy rối).</li>
+    </ul>
+    {% endif %}
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
