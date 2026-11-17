@@ -13,6 +13,11 @@ urlpatterns = [
     path("pending/<int:pk>/reject/", views.group_reject, name="reject"),
     path("<slug:slug>/", views.GroupDetailView.as_view(), name="detail"),
     path("<slug:slug>/edit/", views.group_edit, name="edit"),
+    path(
+    "<slug:slug>/recruitment/",
+    views.group_recruitment_edit,
+    name="recruitment",
+    ),
     path("<slug:slug>/disable/", views.group_disable, name="disable"),
     path("<slug:slug>/enable/", views.group_enable, name="enable"),
     path("<slug:slug>/leave/", views.group_leave, name="leave"),
@@ -30,4 +35,5 @@ urlpatterns = [
     path("<slug:slug>/posts/<int:pk>/delete/", views.group_post_delete, name="post_delete"),
     path("<slug:slug>/posts/<int:pk>/pin/", views.group_post_pin, name="post_pin"),
     path("<slug:slug>/posts/<int:pk>/reject/", views.group_post_reject, name="post_reject"),
+
 ]
