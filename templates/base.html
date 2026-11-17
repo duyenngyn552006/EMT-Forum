@@ -27,7 +27,7 @@
         header nav a { font-size: 15px; }
         .header-left { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; min-width: 0; }
         .header-right { display: flex; align-items: center; flex-wrap: nowrap; gap: 7px; margin-left: auto; flex-shrink: 0; }
-        main { flex: 1 0 auto; width: 100%; box-sizing: border-box; max-width: 1280px; margin: 20px auto 40px; padding: 0 clamp(12px, 2vw, 24px); overflow-x: clip; }
+        main { flex: 1 0 auto; width: 100%; box-sizing: border-box; max-width: 1320px; margin: 20px auto 40px auto; padding: 0 clamp(12px, 2.2vw, 28px); overflow-x: clip; }
 
         .site-footer { background: #10233f; color: #d7deeb; margin-top: 24px; }
         .site-footer-inner { max-width: 1320px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 40px); display: flex; flex-wrap: wrap; gap: 32px; justify-content: space-between; }
@@ -232,11 +232,11 @@
            cao (ty le 3). 2 cot cao bang nhau nho grid stretch mac dinh (khong set
            align-items de giu stretch). Duoi 900px xep chong doc cho man hinh nho. */
         .home-split-73 { display: grid; grid-template-columns: 7fr 3fr; gap: 20px; }
-        @media (max-width: 900px) { .home-split-73 { grid-template-columns: 1fr; } }
+        @media (max-width: 960px) { .home-split-73 { grid-template-columns: 1fr; } }
 
         /* 2 BXH canh nhau 50:50 */
         .home-split-50 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 900px) { .home-split-50 { grid-template-columns: 1fr; } }
+        @media (max-width: 960px) { .home-split-50 { grid-template-columns: 1fr; } }
 
         .feed-list-row { display: flex; gap: 10px; align-items: flex-start; padding-bottom: 14px; border-bottom: 1px solid #eef0f2; text-decoration: none; }
         .feed-list-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -283,7 +283,7 @@
         .comment-time { font-size: 12px; color: var(--color-text-muted); margin-left: 8px; font-weight: 400; }
         .comment-body { font-size: 14px; margin: 6px 0 0; color: var(--color-text); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
         .comment-main { flex: 1; min-width: 0; }
-        .comment-actions-row { display: flex; align-items: center; gap: 16px; margin-top: 6px; padding-left: 4px; }
+        .comment-actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 6px; padding-left: 4px; }
         .reply-toggle-btn { background: none; border: none; color: var(--color-text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 3px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s ease; }
         .reply-toggle-btn:hover { color: var(--color-primary); background: rgba(12, 59, 122, 0.06); }
         .reply-toggle-btn.danger-text { color: #ef4444; }
@@ -292,30 +292,37 @@
         /* Cây phân cấp bình luận (Threaded Tree) */
         .reply-list {
             margin-left: 36px;
-            padding-left: 18px;
-            border-left: 2px solid #e2e8f0;
+            padding-left: 20px;
             margin-top: 8px;
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
-        html[data-theme="dark"] .reply-list { border-left-color: #334155; }
         .reply-list .comment-item {
-            padding: 8px 0;
+            padding: 8px 0 0;
             border-top: none;
         }
         .reply-list .comment-item::before {
             content: "";
             position: absolute;
-            left: -18px;
-            top: 22px;
-            width: 14px;
-            height: 12px;
+            left: -20px;
+            top: 0;
+            width: 16px;
+            height: 24px;
             border-bottom: 2px solid #e2e8f0;
             border-left: 2px solid #e2e8f0;
-            border-bottom-left-radius: 8px;
+            border-bottom-left-radius: 10px;
         }
-        html[data-theme="dark"] .reply-list .comment-item::before {
+        .reply-list .comment-item:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            left: -20px;
+            top: 0;
+            bottom: -8px;
+            border-left: 2px solid #e2e8f0;
+        }
+        html[data-theme="dark"] .reply-list .comment-item::before,
+        html[data-theme="dark"] .reply-list .comment-item:not(:last-child)::after {
             border-color: #334155;
         }
         .reply-list .comment-bubble {
@@ -621,7 +628,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     {% block extra_head %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=21">
+    <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=28">
 </head>
 <body>
 <header class="site-header">
@@ -665,6 +672,15 @@
                         </a>
                     </div>
                     <div class="nav-dropdown-panel" id="forumDropdown" hidden>
+                        <a href="{% url 'forum:post_list' %}">
+                            <span>Tất cả bài viết</span>
+                        </a>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'forum:post_list' %}?mine=1">
+                                <span>Bài viết của tôi</span>
+                            </a>
+                        {% endif %}
+                        <div class="dropdown-divider"></div>
                         {% for cat in nav_categories %}
                             <a href="{% url 'forum:post_list_by_category' cat.slug %}">
                                 <span>{{ cat.name }}</span>
@@ -691,7 +707,7 @@
                             <span>Nhóm đang tuyển thành viên</span>
                         </a>
                         {% if user.is_authenticated %}
-                            <a href="{{ user.get_absolute_url }}">
+                            <a href="{% url 'groups:list' %}?mine=1">
                                 <span>Nhóm tôi tham gia</span>
                             </a>
                             <div class="dropdown-divider"></div>
@@ -705,23 +721,24 @@
                 {% if user.is_authenticated and user.role == 'staff' %}
                     <div class="admin-menu-wrapper nav-dropdown-wrapper">
                         <div class="nav-dropdown-trigger">
-                            <button type="button" class="admin-menu-btn nav-link-item" onclick="toggleAdminMenu(event)">
+                            <a href="{% url 'moderation:pending_content_list' %}" class="admin-menu-btn nav-link-item{% if '/moderation/' in request.path or '/dashboard/' in request.path or '/users/' in request.path %} active{% endif %}">
                                 <span>Quản trị</span>
-                                <span class="nav-chevron-btn">
+                                <button type="button" class="nav-chevron-btn" onclick="toggleAdminMenu(event)" aria-label="Mở rộng quản trị">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                </span>
-                            </button>
+                                </button>
+                            </a>
                         </div>
                         <div class="admin-dropdown nav-dropdown-panel" id="adminDropdown" hidden>
                             <a href="{% url 'dashboard:overview' %}">Dashboard</a>
-                            <a href="{% url 'accounts:user_list' %}">Quản lý tài khoản</a>
-                            <a href="{% url 'groups:pending_list' %}">Duyệt nhóm</a>
-                            <a href="{% url 'moderation:pending_content_list' %}">Duyệt nội dung</a>
+                            <div class="dropdown-divider"></div>
                             <a href="{% url 'moderation:report_list' %}">Báo cáo vi phạm</a>
+                            <a href="{% url 'moderation:pending_content_list' %}">Duyệt nội dung</a>
+                            <a href="{% url 'moderation:hidden_content_list' %}">Nội dung đã ẩn</a>
                             <a href="{% url 'moderation:appeal_list' %}">Kháng nghị</a>
+                            <div class="dropdown-divider"></div>
                             <a href="{% url 'moderation:keyword_list' %}">Từ khóa nhạy cảm</a>
                             <a href="{% url 'moderation:log_list' %}">Nhật ký kiểm duyệt</a>
-                            <a href="{% url 'forum:category_list' %}">Chuyên mục diễn đàn</a>
+                            <a href="{% url 'accounts:user_list' %}">Quản lý tài khoản</a>
                         </div>
                     </div>
                 {% endif %}
@@ -842,10 +859,12 @@
                 </button>
                 <div class="nav-panel-submenu" hidden>
                     <a href="{% url 'forum:post_list' %}">Tất cả bài viết</a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'forum:post_list' %}?mine=1">Bài viết của tôi</a>
+                    {% endif %}
                     {% for cat in nav_categories %}
                         <a href="{% url 'forum:post_list_by_category' cat.slug %}">📁 {{ cat.name }}</a>
                     {% endfor %}
-                    <a href="{% url 'forum:category_list' %}">🏷️ Xem tất cả chuyên mục →</a>
                 </div>
             </div>
             <div class="nav-panel-item-group">
@@ -856,7 +875,7 @@
                     <a href="{% url 'groups:list' %}">Tất cả nhóm</a>
                     <a href="{% url 'groups:list' %}?recruiting=1">📢 Nhóm đang tuyển thành viên</a>
                     {% if user.is_authenticated %}
-                        <a href="{{ user.get_absolute_url }}">👥 Nhóm tôi tham gia</a>
+                        <a href="{% url 'groups:list' %}?mine=1">👥 Nhóm tôi tham gia</a>
                         <a href="{% url 'groups:create' %}">➕ Tạo nhóm mới</a>
                     {% endif %}
                 </div>
@@ -869,14 +888,13 @@
                     </button>
                     <div class="nav-panel-submenu" hidden>
                         <a href="{% url 'dashboard:overview' %}">Dashboard</a>
-                        <a href="{% url 'accounts:user_list' %}">Quản lý tài khoản</a>
-                        <a href="{% url 'groups:pending_list' %}">Duyệt nhóm</a>
-                        <a href="{% url 'moderation:pending_content_list' %}">Duyệt nội dung</a>
                         <a href="{% url 'moderation:report_list' %}">Báo cáo vi phạm</a>
+                        <a href="{% url 'moderation:pending_content_list' %}">Duyệt nội dung</a>
+                        <a href="{% url 'moderation:hidden_content_list' %}">Nội dung đã ẩn</a>
                         <a href="{% url 'moderation:appeal_list' %}">Kháng nghị</a>
                         <a href="{% url 'moderation:keyword_list' %}">Từ khóa nhạy cảm</a>
                         <a href="{% url 'moderation:log_list' %}">Nhật ký kiểm duyệt</a>
-                        <a href="{% url 'forum:category_list' %}">Chuyên mục diễn đàn</a>
+                        <a href="{% url 'accounts:user_list' %}">Quản lý tài khoản</a>
                     </div>
                 {% endif %}
             {% endif %}
@@ -1203,6 +1221,7 @@
     }
 
     function toggleAdminMenu(event) {
+        event.preventDefault();
         event.stopPropagation();
         var dropdown = document.getElementById('adminDropdown');
         if (dropdown) {
@@ -1480,7 +1499,7 @@
         document.addEventListener('change', function (e) {
             var input = e.target;
             if (!input || input.type !== 'file') return;
-            if (input.id === 'directAvatarInput') return; // Đã có khung tròn xem trước riêng
+            if (input.id === 'directAvatarInput' || input.closest('[data-no-global-preview="1"]')) return; // Đã có khung xem trước riêng
 
             var parent = input.closest('p, .form-group, div') || input.parentElement;
             var existingBox = parent.querySelector('.live-image-preview-box');
@@ -1520,6 +1539,54 @@
             }
 
             input.insertAdjacentElement('afterend', previewBox);
+        });
+    })();
+
+    (function initComposerPanels() {
+        var addBar = document.querySelector('.composer-add-bar');
+        if (!addBar) return;
+
+        function setPanelVisible(panelId, visible, shouldScroll) {
+            var panel = document.getElementById(panelId);
+            var chip = addBar.querySelector('[data-composer-target="' + panelId + '"]');
+            if (!panel) return;
+            panel.hidden = !visible;
+            if (chip) {
+                chip.classList.toggle('active', visible);
+                chip.setAttribute('aria-expanded', visible ? 'true' : 'false');
+                var status = chip.querySelector('.composer-chip-status');
+                if (status) status.textContent = visible ? 'Đang mở' : '+ Thêm';
+            }
+            if (visible && shouldScroll) {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        addBar.querySelectorAll('[data-composer-target]').forEach(function (chip) {
+            var targetId = chip.getAttribute('data-composer-target');
+            var panel = document.getElementById(targetId);
+            if (!panel) return;
+
+            var hasErrors = !!panel.querySelector('.field-errors, .errorlist li, .composer-errors li');
+            var hasExisting = panel.getAttribute('data-has-initial') === '1';
+            if (hasErrors || hasExisting) {
+                setPanelVisible(targetId, true, false);
+            } else {
+                setPanelVisible(targetId, !panel.hidden, false);
+            }
+
+            chip.addEventListener('click', function () {
+                setPanelVisible(targetId, panel.hidden, true);
+            });
+        });
+
+        document.querySelectorAll('.composer-panel-close').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var panel = btn.closest('.composer-panel');
+                if (panel && panel.id) {
+                    setPanelVisible(panel.id, false, false);
+                }
+            });
         });
     })();
 </script>

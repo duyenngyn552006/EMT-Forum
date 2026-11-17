@@ -1,27 +1,76 @@
 {% extends "groups/group_layout.html" %}
-{% block title %}{{ post.title }}{% endblock %}
+{% block title %}{{ post.title }} | {{ post.group.name }}{% endblock %}
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
 {% block group_content %}
-<div class="card">
-    <h1>{{ post.title }}</h1>
-    <p>{{ post.group.name }} · <a class="author-link" href="{{ post.author.get_absolute_url }}">{{ post.author }}</a> · {{ post.created_at|date:"d/m/Y H:i" }} · 👁️ {{ post.view_count }} lượt xem
-        {% if post.is_edited %} · <em>Đã chỉnh sửa</em>{% endif %}</p>
-    {% if post.featured_image %}<img src="{{ post.featured_image.url }}" alt="" style="max-width:100%; border-radius:10px; margin-bottom:12px;">{% endif %}
-    <div class="rich-content">{{ post.body|safe }}</div>
-    {% include "interactions/_documents.html" %}
+<nav class="pd-breadcrumb">
+  <a href="{% url 'groups:detail' post.group.slug %}"><i class="bi bi-people"></i> {{ post.group.name }}</a>
+  <span class="pd-sep">/</span>
+  <span class="pd-curr">Chi tiết bài viết</span>
+</nav>
 
+<article class="pd-card">
+  <div class="pd-top-bar">
+    <div class="pd-top-badges">
+      {% if post.category %}<span class="pd-tag-pill"><i class="bi bi-tag"></i> {{ post.get_category_display }}</span>{% endif %}
+    </div>
     {% if user.is_authenticated %}
+      <div class="pd-top-actions">
         <div class="post-menu-wrapper">
-            <button type="button" class="post-menu-btn" onclick="togglePostMenu(event)" aria-label="Tùy chọn">•••</button>
-            <div class="post-menu-dropdown" id="postMenuDropdown" hidden>
-                {% if user == post.author or user.role == "staff" %}
-                    <a href="{% url 'groups:post_edit' post.group.slug post.pk %}">✏️ Sửa</a>
-                    <a class="danger-text" href="#" onclick="showDeleteConfirm(event, '{% url 'groups:post_delete' post.group.slug post.pk %}', 'Xác nhận xóa bài viết &quot;{{ post.title|escapejs }}&quot;?')">🗑️ Xóa</a>
-                {% endif %}
-                <form method="post" action="{% url 'interactions:toggle_save' 'grouppost' post.pk %}">{% csrf_token %}<button type="submit">{% if user_has_saved %}🔖 Đã lưu{% else %}🔖 Lưu{% endif %}</button></form>
-                <a class="danger-text" href="{% url 'moderation:create_report' 'grouppost' post.pk %}">🚩 Báo cáo vi phạm</a>
-            </div>
+          <button type="button" class="pd-dots" onclick="togglePostMenu(event)" aria-label="Tùy chọn"><i class="bi bi-three-dots"></i></button>
+          <div class="post-menu-dropdown" id="postMenuDropdown" hidden>
+            {% if user == post.author or user.role == "staff" %}
+              <a href="{% url 'groups:post_edit' post.group.slug post.pk %}"><i class="bi bi-pencil"></i> Sửa</a>
+              <a class="danger-text" href="#" data-url="{% url 'groups:post_delete' post.group.slug post.pk %}" data-msg='Xác nhận xóa bài viết "{{ post.title|escapejs }}"?' onclick="event.preventDefault();showDeleteConfirm(event,this.dataset.url,this.dataset.msg)"><i class="bi bi-trash"></i> Xóa</a>
+            {% endif %}
+            <form method="post" action="{% url 'interactions:toggle_save' 'grouppost' post.pk %}">{% csrf_token %}<button type="submit"><i class="bi {% if user_has_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i> {% if user_has_saved %}Bỏ lưu bài viết{% else %}Lưu bài viết{% endif %}</button></form>
+            <a class="danger-text" href="{% url 'moderation:create_report' 'grouppost' post.pk %}"><i class="bi bi-flag"></i> Báo cáo vi phạm</a>
+          </div>
         </div>
+      </div>
     {% endif %}
-</div>
-{% include "interactions/_interactions.html" %}
+  </div>
+
+  <h1 class="pd-title">{{ post.title }}</h1>
+
+  <div class="pd-author-box">
+    <a href="{{ post.author.get_absolute_url }}" class="pd-av">{{ post.author.get_full_name|default:post.author.username|first|upper }}</a>
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <a href="{{ post.author.get_absolute_url }}" class="pd-author-name">{{ post.author }}</a>
+        {% if post.author.role %}<span class="pd-role-pill">{{ post.author.get_role_display|default:post.author.role }}</span>{% endif %}
+      </div>
+      <div class="pd-author-meta"><i class="bi bi-calendar3"></i> {{ post.created_at|date:"d/m/Y H:i" }}{% if post.is_edited %} · <em>Đã chỉnh sửa</em>{% endif %}</div>
+    </div>
+  </div>
+
+  {% if post.featured_image %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="pd-media">{% endif %}
+
+  <div class="pd-body rich-content">{{ post.body|safe }}</div>
+
+  {% include "interactions/_documents.html" %}
+
+  <div class="pd-poll-section" id="pdPollSection">
+    {% if post.poll %}{{ post.poll.render }}{% endif %}
+  </div>
+
+  <div class="pd-footer">
+    <div class="pd-react-slot" id="pdReactSlot"></div>
+    <div class="pd-stats">
+      <span class="pd-stat"><i class="bi bi-eye"></i> <span id="pdViewCount">{{ post.view_count }}</span> lượt xem</span>
+      <span class="pd-stat"><i class="bi bi-chat"></i> <span id="pdCmtCount">0</span> bình luận</span>
+      <span class="pd-stat"><i class="bi bi-heart"></i> <span id="pdLikeCount">0</span> lượt thích</span>
+    </div>
+  </div>
+</article>
+
+<section class="pd-comments-card" id="comments">
+  <div class="pd-cmt-head"><span class="pd-cmt-title">Bình luận (<span id="pdCmtHeadCount">0</span>)</span></div>
+  <div class="pd-cmt-mount" id="pdCmtMount">{% include "interactions/_interactions.html" %}</div>
+  <div id="pdCmtListArea"></div>
+</section>
+
+{% include "interactions/_post_detail_enhance.html" %}
 {% endblock %}

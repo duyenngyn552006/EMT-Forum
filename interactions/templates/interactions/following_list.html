@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Mục đang theo dõi{% endblock %}
+{% load static %}
+{% block title %}Mục đang theo dõi - EMT Forum{% endblock %}
+
 {% block breadcrumb %}
 <nav class="breadcrumb-nav" aria-label="Đường dẫn">
     <a href="{% url 'home' %}">
@@ -12,28 +14,104 @@
     <span class="breadcrumb-current">Mục đang theo dõi</span>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="card">
-    <h1>Mục đang theo dõi</h1>
-    <p style="font-size:13px;color:#6b7280;">Bạn nhận thông báo khi có bài mới trong chuyên mục/thẻ, hoặc bình luận mới trong bài đang theo dõi. Có thể tắt loại thông báo này ở <a href="{% url 'notifications:preferences' %}">Cài đặt thông báo</a>.</p>
-</div>
-{% for row in rows %}
-<div class="list-card">
-    <div class="list-body">
-        <div class="list-meta">
-            <span class="badge">{% if row.kind == "category" %}Chuyên mục{% else %}Bài viết{% endif %}</span>
+<div style="max-width: 1040px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
+    {# Header Card #}
+    <div class="card" style="padding: clamp(16px, 2.5vw, 24px) clamp(16px, 3vw, 28px); margin: 0;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 280px;">
+                <span class="section-icon-badge sec-announcements" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(12, 59, 122, 0.1); color: #0c3b7a; flex-shrink: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </span>
+                <div style="min-width: 0;">
+                    <h1 style="margin: 0; font-size: clamp(18px, 2.2vw, 22px); font-weight: 800; color: var(--color-heading); line-height: 1.25;">Mục đang theo dõi</h1>
+                    <p style="margin: 4px 0 0; font-size: 13.5px; color: var(--color-text-muted); line-height: 1.45;">
+                        Bạn sẽ nhận được thông báo khi có bài viết mới trong chuyên mục hoặc bình luận mới trong bài đang theo dõi.
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span class="pill" style="font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 999px; background: rgba(12, 59, 122, 0.08); color: #0c3b7a; border: 1px solid rgba(12, 59, 122, 0.18); white-space: nowrap;">
+                    🔔 {{ rows|length }} mục theo dõi
+                </span>
+                <a href="{% url 'notifications:preferences' %}" class="btn btn-sm btn-secondary" style="font-size: 12.5px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Cài đặt thông báo
+                </a>
+            </div>
         </div>
-        <h3 class="list-title"><a href="{{ row.url }}">{{ row.label }}</a></h3>
     </div>
-    <form method="post" action="{% url 'interactions:toggle_follow' row.model_key row.object_id %}">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{% url 'interactions:following' %}">
-        <button class="btn btn-secondary" type="submit">Bỏ theo dõi</button>
-    </form>
+
+    {# Items List #}
+    {% if rows %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for row in rows %}
+            <div class="card" style="margin: 0; padding: clamp(14px, 2vw, 18px) clamp(16px, 2.5vw, 22px); display: flex; align-items: center; justify-content: space-between; gap: 14px; border-radius: 12px; flex-wrap: wrap; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;">
+                <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 260px;">
+                    {# Icon Badge #}
+                    {% if row.kind == "category" %}
+                        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 160, 233, 0.12); color: #00a0e9; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Chuyên mục diễn đàn">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                    {% else %}
+                        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(242, 101, 34, 0.12); color: #f26522; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Bài viết diễn đàn">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        </div>
+                    {% endif %}
+
+                    <div style="min-width: 0; flex: 1;">
+                        <div style="margin-bottom: 4px;">
+                            {% if row.kind == "category" %}
+                                <span class="badge" style="background: #eff6ff; color: #0c3b7a; border: 1px solid #bfdbfe; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap;">
+                                    📁 Chuyên mục
+                                </span>
+                            {% else %}
+                                <span class="badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap;">
+                                    📝 Bài viết
+                                </span>
+                            {% endif %}
+                        </div>
+                        <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; line-height: 1.35; word-break: break-word; overflow-wrap: anywhere;">
+                            <a href="{{ row.url }}" style="color: var(--color-heading); text-decoration: none;">{{ row.label }}</a>
+                        </h3>
+                    </div>
+                </div>
+
+                <div style="flex-shrink: 0; margin-left: auto;">
+                    <form method="post" action="{% url 'interactions:toggle_follow' row.model_key row.object_id %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'interactions:following' %}">
+                        <button class="btn btn-danger-soft" type="submit" title="Dừng nhận thông báo từ mục này" style="font-weight: 600; padding: 7px 14px; font-size: 13px; white-space: nowrap;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                            Bỏ theo dõi
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        {# Empty State #}
+        <div class="card" style="margin: 0; padding: clamp(32px, 5vw, 48px) 20px; text-align: center; border-radius: 16px;">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(12, 59, 122, 0.08); color: #0c3b7a; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+            </div>
+            <h2 style="font-size: 18px; font-weight: 800; color: var(--color-heading); margin: 0 0 8px;">Bạn chưa theo dõi mục nào</h2>
+            <p style="font-size: 14px; color: var(--color-text-muted); max-width: 480px; margin: 0 auto 20px; line-height: 1.5;">
+                Khi theo dõi một chuyên mục hoặc bài viết, bạn sẽ nhận được thông báo ngay khi có bài mới hoặc bình luận thảo luận mới.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                <a href="{% url 'forum:post_list' %}" class="btn btn-primary" style="font-weight: 700; padding: 9px 18px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: -2px;"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Khám phá diễn đàn
+                </a>
+                <a href="{% url 'home' %}" class="btn btn-secondary" style="font-weight: 600; padding: 9px 18px;">
+                    Về trang chủ
+                </a>
+            </div>
+        </div>
+    {% endif %}
 </div>
-{% empty %}
-<div class="card">
-    <p>Bạn chưa theo dõi mục nào. Mở một <a href="{% url 'forum:post_list' %}">chuyên mục diễn đàn</a> hoặc một bài viết rồi bấm “Theo dõi”.</p>
-</div>
-{% endfor %}
 {% endblock %}

@@ -1,162 +1,120 @@
-
 {% extends "base.html" %}
-
-{% block title %}{{ announcement.title }}{% endblock %}
-
+{% block title %}{{ announcement.title }} | Thông báo{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
 {% block content %}
-<div class="card">
+<nav class="pd-breadcrumb">
+  <a href="{% url 'announcements:list' %}"><i class="bi bi-megaphone"></i> Thông báo</a>
+  <span class="pd-sep">/</span>
+  <span class="pd-curr">Chi tiết thông báo</span>
+</nav>
 
-    {% if announcement.is_pinned %}
-        <span class="pill">📌 Đã ghim</span>
-    {% endif %}
-
-    <span class="pill">{{ announcement.get_kind_display }}</span>
-
-    <h1>{{ announcement.title }}</h1>
-
-    <p>
-        <a class="author-link" href="{{ announcement.author.get_absolute_url }}">
-            {{ announcement.author }}
-        </a>
-        · {{ announcement.created_at|date:"d/m/Y H:i" }}
-        · 👁️ {{ announcement.view_count }} lượt xem
-
-        {% if announcement.is_edited %}
-            · <em>Đã chỉnh sửa lúc {{ announcement.updated_at|date:"d/m/Y H:i" }}</em>
-        {% endif %}
-    </p>
-
-    {% if announcement.kind == "event" %}
-        {% if announcement.event_datetime %}
-            <p>
-                🗓️ <strong>Thời gian diễn ra:</strong>
-                {{ announcement.event_time_display }}
-            </p>
-        {% endif %}
-
-        {% if announcement.deadline_at %}
-            <p>
-                ⏰ <strong>Hạn đăng ký:</strong>
-                {{ announcement.deadline_at|date:"d/m/Y H:i" }}
-            </p>
-        {% endif %}
-
-        <p>
-            <strong>👥 Số người đã đăng ký:</strong>
-            {{ announcement.registrations.count }}
-        </p>
-
-        {% if user.is_authenticated %}
-            {% if user_registered %}
-                <p>✅ Bạn đã đăng ký tham gia sự kiện này.</p>
-            {% elif announcement.deadline_at and announcement.deadline_at <= now %}
-                <p>Đã hết hạn đăng ký sự kiện.</p>
-            {% else %}
-                <form method="post" action="{% url 'announcements:register_event' announcement.pk %}">
-                    {% csrf_token %}
-                    <button class="btn" type="submit">Đăng ký tham gia</button>
-                </form>
-            {% endif %}
-        {% else %}
-            <p>Vui lòng đăng nhập để đăng ký tham gia sự kiện.</p>
-        {% endif %}
-    {% endif %}
-
-    {% if announcement.featured_image %}
-        <img
-            src="{{ announcement.featured_image.url }}"
-            alt=""
-            onclick="openAnnouncementImage(this.src)"
-            style="max-width:100%; border-radius:10px; margin-bottom:12px; cursor:zoom-in;"
-        >
-    {% endif %}
-
-    <div class="rich-content">
-        {{ announcement.body|safe }}
+<article class="pd-card">
+  <div class="pd-top-bar">
+    <div class="pd-top-badges">
+      <span class="pd-cat-pill"><i class="bi bi-tag"></i> {{ announcement.get_kind_display }}</span>
+      {% if announcement.is_pinned %}<span class="pd-tag-pill"><i class="bi bi-pin-angle-fill"></i> Đã ghim</span>{% endif %}
     </div>
-
-    {% for att in announcement.attachments.all %}
-        <img
-            src="{{ att.image.url }}"
-            alt="{{ att.caption }}"
-            onclick="openAnnouncementImage(this.src)"
-            style="max-width:100%; margin-bottom:8px; cursor:zoom-in; border-radius:8px;"
-        >
-    {% endfor %}
-
     {% if user.is_authenticated %}
+      <div class="pd-top-actions">
         <div class="post-menu-wrapper">
-            <button
-                type="button"
-                class="post-menu-btn"
-                onclick="togglePostMenu(event)"
-                aria-label="Tùy chọn"
-            >•••</button>
-
-            <div class="post-menu-dropdown" id="postMenuDropdown" hidden>
-
-                {% if user == announcement.author or user.role == "staff" %}
-                    <a href="{% url 'announcements:edit' announcement.pk %}">✏️ Sửa</a>
-                {% endif %}
-
-                {% if user.role in "lecturer,bch,staff" %}
-                    {% if announcement.is_pinned %}
-                        <form method="post" action="{% url 'announcements:unpin' announcement.pk %}">
-                            {% csrf_token %}
-                            <button type="submit">📌 Bỏ ghim</button>
-                        </form>
-                    {% else %}
-                        <form method="post" action="{% url 'announcements:pin' announcement.pk %}">
-                            {% csrf_token %}
-                            <button type="submit">📌 Ghim</button>
-                        </form>
-                    {% endif %}
-                {% endif %}
-
-                <form method="post" action="{% url 'interactions:toggle_save' 'announcement' announcement.pk %}">
-                    {% csrf_token %}
-                    <button type="submit">
-                        {% if user_has_saved %}🔖 Đã lưu{% else %}🔖 Lưu{% endif %}
-                    </button>
-                </form>
-
-                <a class="danger-text" href="{% url 'moderation:create_report' 'announcement' announcement.pk %}">
-                    🚩 Báo cáo vi phạm
-                </a>
-            </div>
+          <button type="button" class="pd-dots" onclick="togglePostMenu(event)" aria-label="Tùy chọn"><i class="bi bi-three-dots"></i></button>
+          <div class="post-menu-dropdown" id="postMenuDropdown" hidden>
+            {% if user == announcement.author or user.role == "staff" %}
+              <a href="{% url 'announcements:edit' announcement.pk %}"><i class="bi bi-pencil"></i> Sửa</a>
+            {% endif %}
+            {% if user.role in "lecturer,bch,staff" %}
+              {% if announcement.is_pinned %}
+                <form method="post" action="{% url 'announcements:unpin' announcement.pk %}">{% csrf_token %}<button type="submit"><i class="bi bi-pin-angle"></i> Bỏ ghim</button></form>
+              {% else %}
+                <form method="post" action="{% url 'announcements:pin' announcement.pk %}">{% csrf_token %}<button type="submit"><i class="bi bi-pin-angle-fill"></i> Ghim thông báo</button></form>
+              {% endif %}
+            {% endif %}
+            <form method="post" action="{% url 'interactions:toggle_save' 'announcement' announcement.pk %}">{% csrf_token %}<button type="submit"><i class="bi {% if user_has_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i> {% if user_has_saved %}Bỏ lưu thông báo{% else %}Lưu thông báo{% endif %}</button></form>
+            <a class="danger-text" href="{% url 'moderation:create_report' 'announcement' announcement.pk %}"><i class="bi bi-flag"></i> Báo cáo vi phạm</a>
+          </div>
         </div>
-
-        {% if user.role == "staff" and announcement.history.count %}
-            <details style="margin-top:12px;">
-                <summary>Lịch sử chỉnh sửa ({{ announcement.history.count }})</summary>
-
-                {% for h in announcement.history.all %}
-                    <p>
-                        <strong>{{ h.editor }}</strong>
-                        - {{ h.edited_at|date:"d/m/Y H:i" }}
-                        <br>
-                        {{ h.title }}
-                    </p>
-                {% endfor %}
-            </details>
-        {% endif %}
+      </div>
     {% endif %}
+  </div>
 
-</div>
+  <h1 class="pd-title">{{ announcement.title }}</h1>
+
+  <div class="pd-author-box">
+    <a href="{{ announcement.author.get_absolute_url }}" class="pd-av">{{ announcement.author.get_full_name|default:announcement.author.username|first|upper }}</a>
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <a href="{{ announcement.author.get_absolute_url }}" class="pd-author-name">{{ announcement.author }}</a>
+        {% if announcement.author.role %}<span class="pd-role-pill">{{ announcement.author.get_role_display|default:announcement.author.role }}</span>{% endif %}
+      </div>
+      <div class="pd-author-meta"><i class="bi bi-calendar3"></i> {{ announcement.created_at|date:"d/m/Y H:i" }}{% if announcement.is_edited %} · <em>Đã chỉnh sửa lúc {{ announcement.updated_at|date:"d/m/Y H:i" }}</em>{% endif %}</div>
+    </div>
+  </div>
+
+  {% if announcement.kind == "event" %}
+    <div class="pd-event-box">
+      {% if announcement.event_datetime %}
+        <div class="pd-event-row"><i class="bi bi-calendar-event"></i> <strong>Thời gian diễn ra:</strong> {{ announcement.event_time_display }}</div>
+      {% endif %}
+      {% if announcement.deadline_at %}
+        <div class="pd-event-row"><i class="bi bi-clock"></i> <strong>Hạn đăng ký:</strong> {{ announcement.deadline_at|date:"d/m/Y H:i" }}</div>
+      {% endif %}
+      <div class="pd-event-row"><i class="bi bi-people"></i> <strong>Số người đã đăng ký:</strong> {{ announcement.registrations.count }}</div>
+
+      <div style="margin-top:4px;">
+        {% if user.is_authenticated %}
+          {% if user_registered %}
+            <span class="pd-cat-pill"><i class="bi bi-check-circle"></i> Bạn đã đăng ký tham gia sự kiện này</span>
+          {% elif announcement.deadline_at and announcement.deadline_at <= now %}
+            <span class="pd-role-pill">Đã hết hạn đăng ký sự kiện.</span>
+          {% else %}
+            <form method="post" action="{% url 'announcements:register_event' announcement.pk %}">
+              {% csrf_token %}
+              <button class="btn" type="submit">Đăng ký tham gia</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <p style="margin:0;">Vui lòng <a href="{% url 'account_login' %}">đăng nhập</a> để đăng ký tham gia sự kiện.</p>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if announcement.featured_image %}
+    <img src="{{ announcement.featured_image.url }}" alt="{{ announcement.title }}" class="pd-media" onclick="openAnnouncementImage(this.src)" style="cursor:zoom-in;">
+  {% endif %}
+
+  <div class="pd-body rich-content">{{ announcement.body|safe }}</div>
+
+  {% for att in announcement.attachments.all %}
+    <img src="{{ att.image.url }}" alt="{{ att.caption }}" class="pd-media" onclick="openAnnouncementImage(this.src)" style="cursor:zoom-in; margin-bottom:8px;">
+  {% endfor %}
+
+  <div class="pd-poll-section" id="pdPollSection"></div>
+
+  <div class="pd-footer">
+    <div class="pd-react-slot" id="pdReactSlot"></div>
+    <div class="pd-stats">
+      <span class="pd-stat"><i class="bi bi-eye"></i> <span id="pdViewCount">{{ announcement.view_count }}</span> lượt xem</span>
+      <span class="pd-stat"><i class="bi bi-chat"></i> <span id="pdCmtCount">0</span> bình luận</span>
+      <span class="pd-stat"><i class="bi bi-heart"></i> <span id="pdLikeCount">0</span> lượt thích</span>
+    </div>
+  </div>
+
+  {% if user.is_authenticated and user.role == "staff" and announcement.history.count %}
+    <details class="pd-history">
+      <summary>Lịch sử chỉnh sửa ({{ announcement.history.count }})</summary>
+      {% for h in announcement.history.all %}
+        <p><strong>{{ h.editor }}</strong> · {{ h.edited_at|date:"d/m/Y H:i" }}<br>{{ h.title }}</p>
+      {% endfor %}
+    </details>
+  {% endif %}
+</article>
 
 <!-- Phóng to ảnh -->
-<div
-    id="announcementImageModal"
-    onclick="this.style.display='none'"
-    style="display:none; position:fixed; z-index:9999; inset:0;
-           background:rgba(0,0,0,0.9); justify-content:center;
-           align-items:center; padding:20px; cursor:zoom-out;"
->
-    <img
-        id="announcementImagePreview"
-        alt="Ảnh phóng to"
-        style="max-width:95%; max-height:90vh; object-fit:contain;"
-    >
+<div id="announcementImageModal" onclick="this.style.display='none'" style="display:none; position:fixed; z-index:9999; inset:0; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; padding:20px; cursor:zoom-out;">
+  <img id="announcementImagePreview" alt="Ảnh phóng to" style="max-width:95%; max-height:90vh; object-fit:contain;">
 </div>
 
 <script>
@@ -166,6 +124,11 @@ function openAnnouncementImage(imageUrl) {
 }
 </script>
 
-{% include "interactions/_interactions.html" %}
+<section class="pd-comments-card" id="comments">
+  <div class="pd-cmt-head"><span class="pd-cmt-title">Bình luận (<span id="pdCmtHeadCount">0</span>)</span></div>
+  <div class="pd-cmt-mount" id="pdCmtMount">{% include "interactions/_interactions.html" %}</div>
+  <div id="pdCmtListArea"></div>
+</section>
 
+{% include "interactions/_post_detail_enhance.html" %}
 {% endblock %}

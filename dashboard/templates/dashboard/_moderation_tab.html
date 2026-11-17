@@ -32,25 +32,6 @@
     {% endfor %}
 </div>
 
-<h3>Cần xử lý ngay</h3>
-<div class="stat-grid">
-    <div class="stat-tile{% if mod.queue.reports %} needs-action{% endif %}">
-        <p class="stat-label">Báo cáo đang mở{% if mod.queue.reports %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
-        <p class="stat-value">{{ mod.queue.reports }}</p>
-        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:report_list' %}">Mở danh sách báo cáo <span class="arrow" aria-hidden="true">→</span></a></p>
-    </div>
-    <div class="stat-tile{% if mod.queue.content %} needs-action{% endif %}">
-        <p class="stat-label">Nội dung chờ kiểm duyệt{% if mod.queue.content %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
-        <p class="stat-value">{{ mod.queue.content }}</p>
-        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:pending_content_list' %}">Mở hàng chờ duyệt <span class="arrow" aria-hidden="true">→</span></a></p>
-    </div>
-    <div class="stat-tile{% if mod.queue.appeals %} needs-action{% endif %}">
-        <p class="stat-label">Kháng nghị chờ xét{% if mod.queue.appeals %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
-        <p class="stat-value">{{ mod.queue.appeals }}</p>
-        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:appeal_list' %}">Mở danh sách kháng nghị <span class="arrow" aria-hidden="true">→</span></a></p>
-    </div>
-</div>
-
 <div class="card chart-card">
     <div class="chart-head">
         <div>
@@ -68,6 +49,25 @@
         {% endfor %}
     </ul>
     {% if not mod.new_reports %}<p class="chart-empty">Chưa có báo cáo nào trong kỳ này.</p>{% endif %}
+</div>
+
+<h3>Cần xử lý ngay</h3>
+<div class="stat-grid">
+    <div class="stat-tile{% if mod.queue.reports %} needs-action{% endif %}">
+        <p class="stat-label">Báo cáo đang mở{% if mod.queue.reports %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
+        <p class="stat-value">{{ mod.queue.reports }}</p>
+        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:report_list' %}">Mở danh sách báo cáo <span class="arrow" aria-hidden="true">→</span></a></p>
+    </div>
+    <div class="stat-tile{% if mod.queue.content %} needs-action{% endif %}">
+        <p class="stat-label">Nội dung chờ kiểm duyệt{% if mod.queue.content %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
+        <p class="stat-value">{{ mod.queue.content }}</p>
+        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:pending_content_list' %}">Mở hàng chờ duyệt <span class="arrow" aria-hidden="true">→</span></a></p>
+    </div>
+    <div class="stat-tile{% if mod.queue.appeals %} needs-action{% endif %}">
+        <p class="stat-label">Kháng nghị chờ xét{% if mod.queue.appeals %}<span class="status-tag">Cần xử lý</span>{% endif %}</p>
+        <p class="stat-value">{{ mod.queue.appeals }}</p>
+        <p class="stat-sub"><a class="more-link more-link-sm" href="{% url 'moderation:appeal_list' %}">Mở danh sách kháng nghị <span class="arrow" aria-hidden="true">→</span></a></p>
+    </div>
 </div>
 
 <div class="card">

@@ -186,7 +186,7 @@ class PollTests(TestCase):
     def test_any_member_can_attach_poll_when_creating_own_group_post(self):
         self.client.force_login(self.student)  # thanh vien thuong - truoc day chi truong/pho nhom moi tao duoc
         self.client.post(
-            self.group_create_url, {"title": "Bai nhom co poll", "body": "noi dung", **self.poll_payload},
+            self.group_create_url, {"title": "Bai nhom co poll", "category": "discussion", "body": "noi dung", **self.poll_payload},
         )
         poll = Poll.objects.get()
         self.assertEqual(poll.created_by, self.student)
@@ -196,7 +196,7 @@ class PollTests(TestCase):
         self.client.force_login(self.student)
         self.client.post(
             self.group_create_url,
-            {"title": "Bai nhom khong poll", "body": "noi dung",
+            {"title": "Bai nhom khong poll", "category": "discussion", "body": "noi dung",
              "poll-question": "", "poll-options": "", "poll-closes_at": ""},
         )
         self.assertTrue(GroupPost.objects.filter(title="Bai nhom khong poll").exists())
