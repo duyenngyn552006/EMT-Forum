@@ -233,7 +233,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(bar&&slot){
     const sum=mk("div","pd-rx-summary"),ico=mk("span","pd-rx-icons","👍"),tot=mk("span","pd-rx-total","0"),dock=mk("div","fb-rx-dock");
     sum.append(ico,tot);slot.append(bar);slot.prepend(sum);slot.append(dock);
-    const E=["👍","❤️","❤","🥰","😂","😮","💡","😢","😡"],norm=s=>s.replace(/\uFE0F/g,""),show=k=>k==="❤"?"❤️":k;
+    const E=["👍","❤️","😮","💡"],norm=s=>s.replace(/\uFE0F/g,""),show=k=>k==="❤"?"❤️":k;
     slot.querySelectorAll("button").forEach(b=>{const n=b.textContent.match(/\d+/)?.[0];if(n)b.dataset.count=n});
 
     const sync=()=>{
