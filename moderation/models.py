@@ -28,13 +28,27 @@ class Report(models.Model):
         RESOLVED = "resolved", "Đã xử lý"
         DISMISSED = "dismissed", "Đã bỏ qua"
 
+    class Category(models.TextChoices):
+        """Danh muc ly do bao cao co dinh (M1) - nguoi bao cao chon 1, Giao vu loc/thong ke theo loai."""
+        SPAM = "spam", "Spam, quảng cáo"
+        MISINFORMATION = "misinformation", "Thông tin sai lệch"
+        HARASSMENT = "harassment", "Xúc phạm, quấy rối"
+        INAPPROPRIATE = "inappropriate", "Không phù hợp hoặc sai chuyên mục"
+        COPYRIGHT = "copyright", "Vi phạm bản quyền, chia sẻ tài liệu trái phép"
+        OTHER = "other", "Khác"
+
+    # Trang thai con "dang mo" (chua xu ly xong) - dung chung cho chong bao cao trung va gop bao cao
+    OPEN_STATUSES = (Status.PENDING, Status.REVIEWING)
+
     reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reports_made")
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
 
-    reason = models.TextField()
+    category = models.CharField("Loại vi phạm", max_length=20, choices=Category.choices, default=Category.OTHER)
+    # Mo ta them - bat buoc khi chon "Khac" (kiem tra o ReportForm.clean)
+    reason = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
     handled_by = models.ForeignKey(

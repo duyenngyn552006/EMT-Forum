@@ -1,12 +1,40 @@
 {% extends "base.html" %}
 {% block title %}Báo cáo vi phạm{% endblock %}
 {% block content %}
+<style>
+    /* M1 - lua chon loai vi pham dang the bam duoc */
+    .reason-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin: 8px 0 16px; }
+    .reason-option { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 10px;
+        cursor: pointer; font-weight: 500; transition: border-color 0.15s, background 0.15s; }
+    .reason-option:hover { border-color: #94a3b8; background: #f8fafc; }
+    .reason-option input { width: auto; margin: 0; accent-color: #b91c1c; }
+    .reason-option:has(input:checked) { border-color: #b91c1c; background: #fdf2f2; }
+    .report-target { color: #64748b; margin: 4px 0 16px; }
+    html[data-theme="dark"] .reason-option { border-color: #2c3a55; }
+    html[data-theme="dark"] .reason-option:hover { background: #17223a; border-color: #3a4a68; }
+    html[data-theme="dark"] .reason-option:has(input:checked) { border-color: #f87171; background: #3d1518; }
+    html[data-theme="dark"] .report-target { color: #b7c3d6; }
+</style>
 <div class="card">
     <h1>Báo cáo vi phạm</h1>
+    <p class="report-target">Nội dung bị báo cáo: <a href="{{ back_url }}">{{ object_label }}</a></p>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn btn-danger" type="submit">Gửi báo cáo</button>
+        {{ form.non_field_errors }}
+        <label><strong>{{ form.category.label }}</strong></label>
+        {{ form.category.errors }}
+        <div class="reason-options">
+            {% for radio in form.category %}
+                <label class="reason-option" for="{{ radio.id_for_label }}">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+            {% endfor %}
+        </div>
+        <label for="{{ form.reason.id_for_label }}"><strong>{{ form.reason.label }}</strong></label>
+        {{ form.reason.errors }}
+        {{ form.reason }}
+        <div class="manage-bar">
+            <button class="btn btn-danger" type="submit">Gửi báo cáo</button>
+            <a class="btn btn-secondary" href="{{ back_url }}">Hủy</a>
+        </div>
     </form>
 </div>
 {% endblock %}

@@ -1,0 +1,40 @@
+{% extends "moderation/base_moderation.html" %}
+{% block title %}Nội dung đã ẩn{% endblock %}
+{% block mod_content %}
+<style>
+    .hidden-item { border: 1px solid #e0e0e0; border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
+    .hidden-item h3 { margin: 0; font-size: 16px; }
+    .hidden-meta { font-size: 13px; color: #64748b; margin: 8px 0; }
+    .hidden-reason { font-size: 14px; margin: 0 0 12px; }
+    .restore-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .restore-form input[type=text] { flex: 1 1 280px; max-width: 520px; margin: 0; }
+    html[data-theme="dark"] .hidden-item { border-color: #2c3a55; }
+    html[data-theme="dark"] .hidden-meta { color: #b7c3d6; }
+</style>
+<div class="card">
+    <h1>Nội dung đã ẩn</h1>
+    <p style="margin-top:4px;">Nội dung bị ẩn tạm thời khi xử lý báo cáo. Sau khi xác minh không vi phạm, bấm <strong>Khôi phục</strong> để đăng lại; tác giả sẽ nhận thông báo. Nội dung vi phạm rõ ràng nên dùng "Xóa nội dung" ở trang xử lý báo cáo.</p>
+
+    {% for item in items %}
+    <div class="hidden-item">
+        <h3>
+            <span class="pill">{{ item.type_name }}</span>
+            {% if item.url %}<a href="{{ item.url }}" target="_blank">{{ item.label }}</a>{% else %}{{ item.label }}{% endif %}
+        </h3>
+        <p class="hidden-meta">
+            Tác giả: <strong>{{ item.author }}</strong>
+            {% if item.hidden_at %} · Ẩn lúc {{ item.hidden_at|date:"d/m/Y H:i" }}{% if item.hidden_by %} bởi {{ item.hidden_by }}{% endif %}{% endif %}
+        </p>
+        {% if item.reason %}<p class="hidden-reason"><strong>Lý do ẩn:</strong> {{ item.reason }}</p>{% endif %}
+        <form method="post" action="{% url 'moderation:restore_content' item.model_key item.object.pk %}" class="restore-form"
+              onsubmit="return confirm('Khôi phục nội dung này? Nội dung sẽ hiển thị lại với mọi người.');">
+            {% csrf_token %}
+            <input type="text" name="note" maxlength="200" placeholder="Ghi chú khôi phục (không bắt buộc), ví dụ: Đã xác minh với phòng Đào tạo">
+            <button class="btn btn-sm" type="submit">↺ Khôi phục</button>
+        </form>
+    </div>
+    {% empty %}
+    <p style="margin-top:14px;">Không có nội dung nào đang bị ẩn.</p>
+    {% endfor %}
+</div>
+{% endblock %}
