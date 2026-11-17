@@ -1,4 +1,15 @@
 {% extends "groups/group_layout.html" %}
+{% block breadcrumb %}
+<nav class="group-breadcrumb" aria-label="Đường dẫn trang">
+    <a href="{% url 'home' %}">Trang chủ</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{% url 'groups:list' %}">Nhóm</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <span aria-current="page">{{ group.name }}</span>
+</nav>
+{% endblock %}
 {% block title %}{{ group.name }}{% endblock %}
 {% block extra_head %}
 {{ block.super }}
@@ -73,7 +84,15 @@
         {% endif %}
     {% endif %}
     {% if my_role == "leader" or is_staff_user %}
-        <a class="btn btn-secondary" href="{% url 'groups:edit' group.slug %}">Sửa thông tin nhóm</a>
+    <a class="btn btn-secondary"
+       href="{% url 'groups:edit' group.slug %}">
+        Sửa thông tin nhóm
+    </a>
+
+    <a class="btn"
+       href="{% url 'groups:recruitment' group.slug %}">
+        Tuyển thành viên
+    </a>
     {% endif %}
     {% if is_staff_user %}
         {% if group.status == "active" %}

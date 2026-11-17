@@ -284,7 +284,7 @@ def leave_group(group: Group, user):
     membership.delete()
 
 
-def create_group_post(group, author, title, body, featured_image=None):
+def create_group_post(group, author, title, body, featured_image=None, *, category=GroupPost.Category.DISCUSSION):
     """Trưởng/phó nhóm được đăng trực tiếp nếu bài không có từ khóa nhạy cảm."""
     body = sanitize_html(body)
     keyword = find_sensitive_keyword(title, body)
@@ -312,6 +312,7 @@ def create_group_post(group, author, title, body, featured_image=None):
         body=body,
         status=status,
         featured_image=featured_image,
+        category=category,
     )
 
     if keyword:
@@ -325,12 +326,14 @@ def create_group_post(group, author, title, body, featured_image=None):
     return post, keyword
 
 
-def update_group_post(post: GroupPost, editor, title, body, featured_image=None):
+def update_group_post(post: GroupPost, editor, title, body, featured_image=None, *, category=None):
     GroupPostEditHistory.objects.create(post=post, editor=editor, title=post.title, body=post.body)
     body = sanitize_html(body)
     keyword = find_sensitive_keyword(title, body)
     post.title = title
     post.body = body
+    if category is not None:
+        post.category = category
     if featured_image is False:
         post.featured_image = None
     elif featured_image is not None:

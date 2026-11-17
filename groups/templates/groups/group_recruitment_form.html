@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Tuyển thành viên — {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Tuyển thành viên</h1>
+    <p>Nhóm: <strong>{{ group.name }}</strong></p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <p>
+            Để đóng tuyển, bỏ chọn “Đang tuyển thành viên” rồi lưu.
+            Để trống hạn đăng ký nếu muốn tuyển đến khi đóng.
+        </p>
+
+        <button class="btn" type="submit">Lưu thông tin tuyển</button>
+
+        <a class="btn btn-secondary"
+           href="{{ group.get_absolute_url }}">
+            Quay lại nhóm
+        </a>
+    </form>
+</div>
+{% endblock %}
