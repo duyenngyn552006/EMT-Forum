@@ -1,0 +1,143 @@
+<script>
+(function () {
+    const $ = id => document.getElementById(id);
+    window.togglePostMenu = function (e) {
+        e.stopPropagation();
+        const m = $("postMenuDropdown");
+        if (m) m.hidden = !m.hidden;
+    };
+    document.addEventListener("click", e => {
+        const m = $("postMenuDropdown"), w = document.querySelector(".post-menu-wrapper");
+        if (m && w && !w.contains(e.target)) m.hidden = true;
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const mk = (t, c, x) => {
+            const e = document.createElement(t);
+            if (c) e.className = c;
+            if (x) e.textContent = x;
+            return e;
+        };
+
+        const internalPoll = document.querySelector("#pdCmtMount .poll, #pdCmtMount [class*='poll'], #pdCmtMount form[action*='poll']");
+        const targetPollContainer = $("pdPollSection");
+        if (internalPoll && targetPollContainer && !targetPollContainer.innerHTML.trim()) {
+            targetPollContainer.appendChild(internalPoll);
+        } else if (targetPollContainer && !targetPollContainer.innerHTML.trim()) {
+            targetPollContainer.style.display = "none";
+        }
+
+        const slot = $("pdReactSlot"), bar = $("comments")?.querySelector(".reaction-bar, .reactions, [class*='reaction']");
+        if (bar && slot) {
+            const sum = mk("div", "pd-rx-summary"), ico = mk("span", "pd-rx-icons", "👍"), tot = mk("span", "pd-rx-total", "0"), dock = mk("div", "fb-rx-dock");
+            sum.append(ico, tot); slot.append(bar); slot.prepend(sum); slot.append(dock);
+            const E = ["👍", "❤️", "❤", "🥰", "😂", "😮", "💡", "😢", "😡"], norm = s => s.replace(/\uFE0F/g, ""), show = k => k === "❤" ? "❤️" : k;
+            slot.querySelectorAll("button").forEach(b => { const n = b.textContent.match(/\d+/)?.[0]; if (n) b.dataset.count = n; });
+
+            const sync = () => {
+                const P = new Map(), T = [];
+                let hasUserReacted = false, userReactEmoji = "👍";
+                slot.querySelectorAll("button").forEach(b => {
+                    const raw = b.textContent.trim(), em = E.find(e => raw.includes(e)) || "", k = norm(em), n = +(b.dataset.count || raw.match(/\d+/)?.[0] || 0);
+                    const isSelected = b.classList.contains("active") || b.classList.contains("selected") || b.getAttribute("aria-pressed") === "true" || b.style.fontWeight === "bold" || b.closest(".active,.selected,[aria-pressed='true']");
+                    if (em && (b.type === "submit" || b.closest("form,[class*='menu'],[class*='popup'],[class*='picker'],[class*='options'],[class*='dropdown']"))) {
+                        const h = b.closest("form") || b;
+                        if (P.has(k)) { P.set(k, Math.max(P.get(k), n)); h.style.setProperty("display", "none", "important"); return; }
+                        P.set(k, n); h.style.removeProperty("display"); b.classList.add("rx-popup-btn"); b.textContent = show(k); if (h.parentElement !== dock) dock.appendChild(h);
+                        if (isSelected || h.classList.contains("active")) { hasUserReacted = true; userReactEmoji = show(k); }
+                    } else {
+                        b.classList.add("rx-trigger-btn", "rx-hidden-btn");
+                        if (isSelected) { hasUserReacted = true; if (k) userReactEmoji = show(k); }
+                        if (n > 0 && k) T.push(k);
+                    }
+                });
+                const I = []; let t = 0;
+                P.forEach((n, k) => { t += n; if (n > 0) I.push(show(k)); });
+                T.forEach(k => I.includes(show(k)) || I.push(show(k)));
+                const mainBtn = slot.querySelector("#reactionMainBtn");
+                if (mainBtn) {
+                    const liveCntEl = mainBtn.querySelector(".count");
+                    t = liveCntEl ? (+liveCntEl.textContent || 0) : 0;
+                }
+                bar.style.display = "none";
+                if (hasUserReacted) { ico.textContent = userReactEmoji; sum.classList.add("has-reacted"); }
+                else { ico.textContent = I.length ? I[0] : "👍"; sum.classList.remove("has-reacted"); }
+                tot.textContent = t;
+                const likeCountEl = $("pdLikeCount");
+                if (likeCountEl) likeCountEl.textContent = t;
+            };
+
+            sum.addEventListener("click", e => { e.stopPropagation(); slot.classList.toggle("open"); });
+            document.addEventListener("click", () => slot.classList.remove("open"));
+            dock.addEventListener("click", e => {
+                const btn = e.target.closest("button");
+                if (btn) { const em = E.find(x => btn.textContent.includes(x)); if (em) { ico.textContent = show(em); sum.classList.add("has-reacted"); } }
+            });
+            document.addEventListener("emt:reaction-updated", e => {
+                const d = e.detail || {};
+                const cnt = d.count || 0;
+                tot.textContent = cnt;
+                const likeCountEl = $("pdLikeCount");
+                if (likeCountEl) likeCountEl.textContent = cnt;
+                ico.textContent = d.liked ? (d.emoji || "👍") : "👍";
+                sum.classList.toggle("has-reacted", !!d.liked);
+                slot.classList.remove("open");
+            });
+
+            const o = { childList: true, subtree: true, characterData: true }, ob = new MutationObserver(() => { ob.disconnect(); sync(); ob.observe(slot, o); });
+            sync(); ob.observe(slot, o);
+        }
+
+        const mount = $("pdCmtMount"), list = $("pdCmtListArea"); if (!mount || !list) return;
+        const ta = mount.querySelector("textarea"), form = ta && ta.closest("form");
+        if (form) {
+            form.classList.add("pd-cmt-form");
+            ta.placeholder = "Bạn nghĩ gì về nội dung này? Chia sẻ ý kiến của bạn nhé...";
+            if (!form.querySelector(".pd-cmt-box-inner")) {
+                const inner = mk("div", "pd-cmt-box-inner"), isAv = el => el.classList.contains("pd-av") || (!el.querySelector("textarea,input,button,select") && (el.tagName === "IMG" || el.querySelector("img") || /avatar|(^|[-_\s])av($|[-_\s])/i.test(el.className) || el.textContent.trim().length <= 2));
+                [...form.children].forEach(c => isAv(c) || inner.appendChild(c)); form.appendChild(inner);
+                const btn = inner.querySelector("button[type='submit']");
+                if (btn) { btn.textContent = "Gửi bình luận"; const tb = mk("div", "pd-cmt-toolbar"); tb.appendChild(btn); inner.appendChild(tb); }
+            }
+        }
+
+        const h = [...mount.querySelectorAll("h2,h3,h4")].find(x => x.textContent.includes("Bình luận")); if (h) h.style.display = "none";
+
+        [...mount.querySelectorAll("p,div")].forEach(el => {
+            if (!el.contains(form) && !(form && form.contains(el)) && el.textContent.includes("Chưa có bình luận")) {
+                el.style.display = "none";
+            }
+        });
+
+        const SEL = ".comment-item, [id^='comment-']", all = [...mount.querySelectorAll(SEL)], top = all.filter(e => !e.parentElement || !e.parentElement.closest(SEL)), count = +(h?.textContent.match(/\d+/)?.[0] || all.length);
+        const cmtCountEl = $("pdCmtCount"), cmtHeadCountEl = $("pdCmtHeadCount");
+        if (cmtCountEl) cmtCountEl.textContent = count;
+        if (cmtHeadCountEl) cmtHeadCountEl.textContent = count;
+
+        mount.querySelectorAll("a,button").forEach(el => {
+            const txt = el.textContent.trim();
+            if (/^(Trả lời|Báo cáo|Sửa|Xóa)$/.test(txt)) {
+                const f = el.closest("form"), p = f ? f.parentElement : el.parentElement;
+                if (p && p !== mount && !p.matches(SEL)) {
+                    p.classList.add("pd-cmt-acts");
+                    if (txt === "Trả lời" && !el.querySelector("i")) el.innerHTML = `<i class="bi bi-chat"></i> Trả lời`;
+                    else if (txt === "Báo cáo" && !el.querySelector("i")) el.innerHTML = `<i class="bi bi-flag"></i> Báo cáo`;
+                    else if (txt === "Sửa" && !el.querySelector("i")) el.innerHTML = `<i class="bi bi-pencil"></i> Sửa`;
+                    else if (txt === "Xóa" && !el.querySelector("i")) el.innerHTML = `<i class="bi bi-trash"></i> Xóa`;
+                }
+            }
+        });
+
+        if (top.length) top.forEach(e => list.appendChild(e));
+        else if (!count) {
+            const em = mk("div", "pd-cmt-empty");
+            const loginLink = mount.querySelector('a[href*="login"]');
+            const sub = form
+                ? "Hãy là người đầu tiên chia sẻ suy nghĩ của mình!"
+                : (loginLink ? `<a href="${loginLink.getAttribute("href")}">Đăng nhập</a> để bình luận.` : "Đăng nhập để bình luận.");
+            em.innerHTML = `<i class="bi bi-chat-dots"></i><strong>Chưa có bình luận nào</strong><span>${sub}</span>`;
+            list.appendChild(em);
+        }
+    });
+})();
+</script>

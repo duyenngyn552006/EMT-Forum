@@ -17,8 +17,8 @@
                 <tr>
                     <td>{{ kw.keyword }}</td>
                     <td>
-                        {% if kw.is_active %}<span class="badge">Đang áp dụng</span>
-                        {% else %}<span class="badge">Đã tắt</span>{% endif %}
+                        {% if kw.is_active %}<span class="badge badge-active">Đang áp dụng</span>
+                        {% else %}<span class="badge badge-muted">Đã tắt</span>{% endif %}
                     </td>
                     <td>{{ kw.note|default:"—" }}</td>
                     <td>{{ kw.created_at|date:"d/m/Y H:i" }}</td>

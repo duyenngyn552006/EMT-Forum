@@ -1,13 +1,19 @@
 {% extends "moderation/base_moderation.html" %}
 {% block title %}Kháng nghị{% endblock %}
 {% block mod_content %}
+<style>
+    .appeal-item { border: 1px solid #e0e0e0; border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
+    .appeal-meta { font-size: 13px; color: #64748b; margin: 0 0 8px; }
+    html[data-theme="dark"] .appeal-item { border-color: #2c3a55; }
+    html[data-theme="dark"] .appeal-meta { color: #b7c3d6; }
+</style>
 <div class="card">
     <h1>Kháng nghị đang chờ xử lý</h1>
     {% for a in appeals %}
-    <div class="card">
-        <p>{{ a.user }} - {{ a.created_at|date:"d/m/Y H:i" }}</p>
+    <div class="appeal-item">
+        <p class="appeal-meta"><strong>{{ a.user }}</strong> · {{ a.created_at|date:"d/m/Y H:i" }}</p>
         <p>{{ a.reason }}</p>
-        <a class="btn" href="{% url 'moderation:appeal_review' a.pk %}">Xem xét</a>
+        <a class="btn btn-sm" href="{% url 'moderation:appeal_review' a.pk %}">Xem xét</a>
     </div>
     {% empty %}
     <p>Không có kháng nghị nào.</p>

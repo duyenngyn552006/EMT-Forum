@@ -9,6 +9,7 @@ register = template.Library()
 # url_name (theo namespace) -> muc dang mo tren thanh dieu huong
 _ACTIVE_BY_URL = {
     "dashboard": {"overview": "dashboard"},
+    "accounts": {"user_list": "users", "assign_role": "users", "toggle_active": "users"},
     "moderation": {
         "report_list": "reports", "report_resolve": "reports",
         "pending_content_list": "content", "approve_content": "content", "reject_content": "content",
