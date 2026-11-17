@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "groups/group_layout.html" %}
 {% block title %}{{ post.title }}{% endblock %}
-{% block content %}
+{% block group_content %}
 <div class="card">
     <h1>{{ post.title }}</h1>
     <p>{{ post.group.name }} · <a class="author-link" href="{{ post.author.get_absolute_url }}">{{ post.author }}</a> · {{ post.created_at|date:"d/m/Y H:i" }} · 👁️ {{ post.view_count }} lượt xem

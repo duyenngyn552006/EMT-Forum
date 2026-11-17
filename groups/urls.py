@@ -1,4 +1,5 @@
 from django.urls import path
+from django.urls import path
 
 from . import views
 
@@ -27,6 +28,6 @@ urlpatterns = [
     path("<slug:slug>/posts/<int:pk>/", views.GroupPostDetailView.as_view(), name="post_detail"),
     path("<slug:slug>/posts/<int:pk>/edit/", views.group_post_edit, name="post_edit"),
     path("<slug:slug>/posts/<int:pk>/delete/", views.group_post_delete, name="post_delete"),
-    path("<slug:slug>/posts/<int:pk>/approve/", views.group_post_approve, name="post_approve"),
+    path("<slug:slug>/posts/<int:pk>/pin/", views.group_post_pin, name="post_pin"),
     path("<slug:slug>/posts/<int:pk>/reject/", views.group_post_reject, name="post_reject"),
 ]

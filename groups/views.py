@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.views.generic import DetailView, ListView
 from django_ratelimit.decorators import ratelimit
 
+from django.views.decorators.http import require_POST
 from accounts.models import User
 from config.mixins import ContentStatus
 from interactions.documents import build_document_formset, get_documents, save_document_formset
@@ -39,17 +40,48 @@ class GroupListView(ListView):
     paginate_by = 20
 
     def get_queryset(self):
+        params = self.request.GET
         qs = Group.objects.filter(status=Group.Status.ACTIVE)
-        # ?recruiting=1: chi nhom dang tuyen va chua qua han nhan dang ky
-        if self.request.GET.get("recruiting") == "1":
+
+        # Tìm theo một phần tên nhóm.
+        keyword = params.get("q", "").strip()
+        if keyword:
+            qs = qs.filter(name__icontains=keyword)
+
+        # Lọc nhóm công khai hoặc riêng tư.
+        visibility = params.get("visibility", "")
+        if visibility in (Group.Visibility.PUBLIC, Group.Visibility.PRIVATE):
+            qs = qs.filter(visibility=visibility)
+
+        # Chỉ lấy nhóm đang tuyển và chưa quá hạn.
+        if params.get("recruiting") == "1":
             qs = qs.filter(is_recruiting=True).filter(
-                Q(recruit_deadline__isnull=True) | Q(recruit_deadline__gte=timezone.localdate())
+                Q(recruit_deadline__isnull=True)
+                | Q(recruit_deadline__gte=timezone.localdate())
             )
-        return qs
+
+        # Nhóm của tôi: các nhóm người dùng hiện tại đã tham gia.
+        if params.get("mine") == "1":
+            if not self.request.user.is_authenticated:
+                return qs.none()
+            qs = qs.filter(memberships__user=self.request.user)
+
+        return qs.order_by("-created_at", "-pk")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["recruiting_only"] = self.request.GET.get("recruiting") == "1"
+        params = self.request.GET
+
+        ctx["keyword"] = params.get("q", "").strip()
+        ctx["selected_visibility"] = params.get("visibility", "")
+        ctx["recruiting_only"] = params.get("recruiting") == "1"
+        ctx["mine_only"] = params.get("mine") == "1"
+
+        # Giữ từ khóa và bộ lọc khi chuyển trang.
+        filters = params.copy()
+        filters.pop("page", None)
+        ctx["filter_query"] = filters.urlencode()
+
         return ctx
 
 
@@ -84,9 +116,31 @@ class GroupDetailView(DetailView):
             if user.is_authenticated:
                 visible |= Q(status=ContentStatus.PENDING_REVIEW, author=user)
             posts = annotate_interaction_counts(self.object.posts.filter(visible), GroupPost)
-            posts = posts.order_by("-last_activity_at" if current_sort == "activity" else "-created_at")
+            sort_field = "-last_activity_at" if current_sort == "activity" else "-created_at"
+            posts = posts.order_by("-is_pinned", sort_field, "-pk")
         else:
             posts = GroupPost.objects.none()
+        # Lấy danh sách từ model để nhóm chưa có bài vẫn hiện đủ 5 mục.
+        ctx["group_categories"] = GroupPost.Category.choices
+
+        selected_category = self.request.GET.get("category", "")
+        if not ctx["is_member"] or selected_category not in GroupPost.Category.values:
+            selected_category = ""
+
+        if selected_category:
+            posts = posts.filter(category=selected_category)
+
+        ctx["selected_category"] = selected_category
+        ctx["posts"] = posts
+        post_query = self.request.GET.get("q", "").strip()
+
+        if post_query and ctx["can_view_posts"]:
+            posts = posts.filter(
+                Q(title__icontains=post_query) |
+                Q(body__icontains=post_query)
+            )
+
+        ctx["post_query"] = post_query
         ctx["posts"] = posts
         ctx["current_sort"] = current_sort
         ctx["memberships"] = self.object.memberships.select_related("user").order_by(
@@ -106,6 +160,16 @@ class GroupDetailView(DetailView):
             user.is_authenticated and not ctx["is_member"]
             and self.object.join_requests.filter(user=user, status=GroupJoinRequest.Status.PENDING).exists()
         )
+        # Chọn tab trên trang nhóm; mặc định là Thảo luận.
+        tab = self.request.GET.get("tab", "discussion")
+        ctx["active_tab"] = tab if tab in ("discussion", "members", "about") else "discussion"
+
+        # Tính số ngày còn lại nếu nhóm đang tuyển và có đặt hạn.
+        group = self.object
+        ctx["recruit_days_left"] = None
+        if group.is_recruiting_open and group.recruit_deadline is not None:
+            ctx["recruit_days_left"] = (group.recruit_deadline - timezone.localdate()).days
+        ctx["group_categories"] = GroupPost.Category.choices
         return ctx
 
 
@@ -208,9 +272,17 @@ def group_post_create(request, slug):
             if poll_requested:
                 create_poll_from_form(poll_form, post, request.user)
             if keyword:
-                messages.warning(request, "Bài viết chứa từ khóa nhạy cảm, đang chờ trưởng/phó nhóm duyệt.")
+                messages.warning(
+                    request,
+                    "Bài viết chứa từ khóa nhạy cảm, đang chờ trưởng/phó nhóm duyệt.",
+                )
+            elif post.status == ContentStatus.PUBLISHED:
+                messages.success(request, "Đã đăng bài viết vào nhóm.")
             else:
-                messages.success(request, "Đã gửi bài viết, đang chờ trưởng/phó nhóm duyệt.")
+                messages.success(
+                    request,
+                    "Đã gửi bài viết, đang chờ trưởng/phó nhóm duyệt.",
+                )
             return redirect(post.get_absolute_url())
     else:
         form = GroupPostForm()
@@ -318,7 +390,34 @@ def _is_group_manager(user, group):
     return user.is_authenticated and group.memberships.filter(
         user=user, role__in=[GroupMembership.Role.LEADER, GroupMembership.Role.MODERATOR],
     ).exists()
+@login_required
+@require_POST
+def group_post_pin(request, slug, pk):
+    group = get_object_or_404(Group, slug=slug, status=Group.Status.ACTIVE)
 
+    if not _is_group_manager(request.user, group):
+        messages.error(request, "Chỉ trưởng nhóm hoặc phó nhóm được ghim bài.")
+        return redirect(group.get_absolute_url())
+
+    # Chỉ xử lý bài đã xuất bản và thuộc đúng nhóm trên URL.
+    post = get_object_or_404(
+        GroupPost, pk=pk, group=group, status=ContentStatus.PUBLISHED
+    )
+
+    action = request.POST.get("action")
+    if action not in ("pin", "unpin"):
+        messages.error(request, "Thao tác ghim bài không hợp lệ.")
+        return redirect(group.get_absolute_url())
+
+    post.is_pinned = action == "pin"
+    post.save(update_fields=["is_pinned"])
+
+    if post.is_pinned:
+        messages.success(request, "Đã ghim bài lên đầu tab Thảo luận.")
+    else:
+        messages.success(request, "Đã bỏ ghim bài viết.")
+
+    return redirect(group.get_absolute_url())
 
 @login_required
 def group_edit(request, slug):
