@@ -1,51 +1,552 @@
 {% extends "base.html" %}
-{% block title %}Quản lý tài khoản{% endblock %}
+{% load static %}
+{% block title %}Quản lý tài khoản - EMT Forum{% endblock %}
+{% block breadcrumb %}
+<nav class="breadcrumb-nav" aria-label="Đường dẫn">
+    <a href="{% url 'home' %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Trang chủ</span>
+    </a>
+    <span class="breadcrumb-separator">/</span>
+    <span>Quản trị</span>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-current">Quản lý tài khoản</span>
+</nav>
+{% endblock %}
 {% block content %}
-<div class="card">
-    <h1>Quản lý tài khoản</h1>
-    <form method="get" class="search-bar" style="max-width:420px;margin-bottom:14px;">
-        <input type="text" name="q" placeholder="Tìm theo email..." value="{{ request.GET.q }}">
-        <button type="submit">Tìm</button>
-    </form>
-    <div class="table-responsive">
-    <table>
-        <thead>
-            <tr><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Hành động</th><th></th></tr>
-        </thead>
-        <tbody>
-        {% for u in users %}
-            <tr>
-                <td><a class="author-link" href="{{ u.get_absolute_url }}">{{ u.email }}</a></td>
-                <td>
-                    <form method="post" action="{% url 'accounts:assign_role' u.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        <select name="role" onchange="if (confirm('Bạn có chắc chắn muốn đổi vai trò của người dùng này không?')) { this.form.submit(); } else { this.value = '{{ u.role }}'; }">
-                            {% for value, label in roles %}
-                                <option value="{{ value }}" {% if value == u.role %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </form>
-                </td>
-                <td>{% if u.is_active %}Hoạt động{% else %}Đã khóa{% endif %}</td>
-                <td>
-                    <form method="post" action="{% url 'accounts:toggle_lock_account' u.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        {% if u.is_active %}
-                            <input type="text" name="reason" placeholder="Lý do khóa" required>
-                            <button class="btn btn-sm btn-danger" type="submit">Khóa</button>
-                        {% else %}
-                            <button class="btn btn-sm" type="submit">Mở khóa</button>
-                        {% endif %}
-                    </form>
-                </td>
-                <td>
-                    <a class="btn btn-sm btn-secondary" href="{% url 'moderation:log_list' %}?user={{ u.pk }}">Lịch sử vi phạm</a>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+<div style="display:flex; flex-direction:column; gap:20px;">
+    {# Top Metric Cards #}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
+        <a href="{% url 'accounts:user_list' %}" class="card metric-card" style="margin:0; padding:18px 20px; display:flex; align-items:center; gap:16px; text-decoration:none; transition:transform 0.15s, border-color 0.15s, box-shadow 0.15s; border-left:4px solid #0c3b7a;">
+            <div style="width:44px; height:44px; border-radius:10px; background:rgba(12, 59, 122, 0.1); color:#0c3b7a; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+                <div style="font-size:24px; font-weight:800; color:var(--color-heading); line-height:1.1;">{{ total_count }}</div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--color-text-muted); margin-top:3px;">Tổng tài khoản</div>
+            </div>
+        </a>
+
+        <a href="?role=student" class="card metric-card" style="margin:0; padding:18px 20px; display:flex; align-items:center; gap:16px; text-decoration:none; transition:transform 0.15s, border-color 0.15s, box-shadow 0.15s; border-left:4px solid #059669;">
+            <div style="width:44px; height:44px; border-radius:10px; background:rgba(16, 185, 129, 0.1); color:#059669; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
+            <div>
+                <div style="font-size:24px; font-weight:800; color:var(--color-heading); line-height:1.1;">{{ student_count }}</div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--color-text-muted); margin-top:3px;">Sinh viên</div>
+            </div>
+        </a>
+
+        <a href="?role=lecturer" class="card metric-card" style="margin:0; padding:18px 20px; display:flex; align-items:center; gap:16px; text-decoration:none; transition:transform 0.15s, border-color 0.15s, box-shadow 0.15s; border-left:4px solid #00a0e9;">
+            <div style="width:44px; height:44px; border-radius:10px; background:rgba(0, 160, 233, 0.1); color:#00a0e9; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+            </div>
+            <div>
+                <div style="font-size:24px; font-weight:800; color:var(--color-heading); line-height:1.1;">{{ lecturer_count }}</div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--color-text-muted); margin-top:3px;">Giảng viên &amp; Cán bộ</div>
+            </div>
+        </a>
+
+        <a href="?status=locked" class="card metric-card" style="margin:0; padding:18px 20px; display:flex; align-items:center; gap:16px; text-decoration:none; transition:transform 0.15s, border-color 0.15s, box-shadow 0.15s; border-left:4px solid #ef4444;">
+            <div style="width:44px; height:44px; border-radius:10px; background:rgba(239, 68, 68, 0.1); color:#ef4444; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div>
+                <div style="font-size:24px; font-weight:800; color:#ef4444; line-height:1.1;">{{ locked_count }}</div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--color-text-muted); margin-top:3px;">Tài khoản bị khóa</div>
+            </div>
+        </a>
     </div>
-    {% include "_pagination.html" with noun="tài khoản" %}
+
+    {# Main Management Card #}
+    <div class="card" style="padding:24px 28px;">
+        <div class="section-heading" style="margin-bottom:18px;">
+            <div class="section-title-wrap">
+                <span class="section-icon-badge sec-groups">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                <h1 style="font-size:22px; font-weight:800; margin:0; color:var(--color-heading);">Quản lý tài khoản người dùng</h1>
+            </div>
+        </div>
+
+        {# Filter Tabs & Search Bar #}
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:14px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--color-border);">
+            <div class="filter-pills" style="margin:0; display:flex; flex-wrap:wrap; gap:6px;">
+                <a href="{% url 'accounts:user_list' %}" class="{% if not current_role and not current_status %}active{% endif %}">Tất cả</a>
+                <a href="?role=student" class="{% if current_role == 'student' %}active{% endif %}">Sinh viên</a>
+                <a href="?role=lecturer" class="{% if current_role == 'lecturer' %}active{% endif %}">Giảng viên</a>
+                <a href="?role=bch" class="{% if current_role == 'bch' %}active{% endif %}">BCH Khoa</a>
+                <a href="?role=staff" class="{% if current_role == 'staff' %}active{% endif %}">Giáo vụ Khoa</a>
+                <a href="?status=locked" class="{% if current_status == 'locked' %}active{% endif %}" style="color:#ef4444;">🔒 Đã khóa</a>
+            </div>
+
+            <form method="get" class="search-bar" style="margin:0; max-width:380px; width:100%; display:flex; gap:8px;">
+                {% if current_role %}<input type="hidden" name="role" value="{{ current_role }}">{% endif %}
+                {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+                <input type="text" name="q" placeholder="Tìm theo email, tên, MSSV..." value="{{ request.GET.q }}" style="border-radius:999px; padding:8px 16px;">
+                <button type="submit" class="btn btn-primary" style="border-radius:999px; padding:8px 18px; font-weight:700;">Tìm</button>
+            </form>
+        </div>
+
+        {# Thanh thao tác hàng loạt (Bulk Action Bar) - Đưa lên đầu bảng #}
+        <div id="bulkActionBar" style="display:none; position:sticky; top:12px; z-index:90; background:var(--color-surface); border:2px solid #0c3b7a; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.18); padding:10px 18px; margin-bottom:14px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span id="bulkSelectedCount" style="display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px; padding:0 6px; border-radius:13px; background:#0c3b7a; color:#fff; font-weight:800; font-size:13px;">0</span>
+                <span style="font-weight:700; color:var(--color-heading); font-size:13.5px;">tài khoản đang được chọn</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                {# Đổi vai trò hàng loạt #}
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <select id="bulkRoleSelect" style="padding:6px 10px; border-radius:6px; font-size:13px; font-weight:600; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text);">
+                        <option value="">-- Chọn vai trò mới --</option>
+                        {% for value, label in roles %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="executeBulkRoleChange()" style="font-weight:700; padding:6px 14px; font-size:12.5px;">Đổi vai trò</button>
+                </div>
+
+                {# Khóa hàng loạt #}
+                <button type="button" class="btn btn-sm btn-danger" onclick="openBulkLockModal()" style="font-weight:700; padding:6px 14px; font-size:12.5px;">
+                    Khóa tài khoản
+                </button>
+
+                {# Mở khóa hàng loạt #}
+                <button type="button" class="btn btn-sm" onclick="openBulkUnlockModal()" style="font-weight:700; padding:6px 14px; font-size:12.5px; background:#059669; color:#fff;">
+                    Mở khóa
+                </button>
+
+                {# Bỏ chọn #}
+                <button type="button" class="btn btn-sm btn-secondary" onclick="clearBulkSelection()" style="padding:6px 12px; font-size:12.5px; font-weight:600;">
+                    Bỏ chọn
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table style="width:100%; border-collapse:collapse; font-size:13.5px;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--color-border); text-align:left;">
+                        <th style="padding:12px 10px; width:36px; text-align:center;">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" title="Chọn tất cả" style="cursor:pointer; width:16px; height:16px;">
+                        </th>
+                        <th style="padding:12px 14px; font-weight:700; color:var(--color-heading);">Người dùng</th>
+                        <th style="padding:12px 14px; font-weight:700; color:var(--color-heading);">Vai trò</th>
+                        <th style="padding:12px 14px; font-weight:700; color:var(--color-heading);">Trạng thái</th>
+                        <th style="padding:12px 14px; font-weight:700; color:var(--color-heading);">Hành động</th>
+                        <th style="padding:12px 14px; font-weight:700; color:var(--color-heading); text-align:right;">Nhật ký</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for u in users %}
+                    <tr style="border-bottom:1px solid var(--color-border); transition:background 0.15s ease;">
+                        <td style="padding:14px 10px; text-align:center;">
+                            <input type="checkbox" name="user_ids" value="{{ u.pk }}" class="user-checkbox" {% if u == request.user %}disabled title="Không thể tự chọn chính mình"{% else %}onchange="updateBulkBar()"{% endif %} style="cursor:pointer; width:16px; height:16px;">
+                        </td>
+                        <td style="padding:14px;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <a href="{{ u.get_absolute_url }}" style="text-decoration:none; flex-shrink:0;" title="Xem hồ sơ {{ u.get_full_name|default:u.email }}">
+                                    <div style="width:36px; height:36px; border-radius:50%; background:var(--grad-primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; overflow:hidden;">
+                                        {% if u.avatar %}
+                                            <img src="{{ u.avatar.url }}" alt="{{ u }}" style="width:100%; height:100%; object-fit:cover;">
+                                        {% else %}
+                                            {{ u.get_full_name|default:u.email|first|upper }}
+                                        {% endif %}
+                                    </div>
+                                </a>
+                                <div>
+                                    <div style="font-weight:700; line-height:1.2;">
+                                        <a href="{{ u.get_absolute_url }}" style="color:var(--color-heading); text-decoration:none;" class="user-link">
+                                            {% if u.get_full_name %}{{ u.get_full_name }}{% else %}<span style="color:var(--color-text-muted); font-weight:400;">Chưa đặt tên</span>{% endif %}
+                                        </a>
+                                    </div>
+                                    <div style="margin-top:2px;">
+                                        <a class="author-link" href="{{ u.get_absolute_url }}" style="font-size:12.5px; color:var(--color-text-muted);">{{ u.email }}</a>
+                                    </div>
+                                    {% if u.student_id or u.class_name %}
+                                        <div style="margin-top:3px; display:flex; gap:6px; font-size:11px;">
+                                            {% if u.student_id %}<span class="pill" style="padding:1px 6px;">MSSV: {{ u.student_id }}</span>{% endif %}
+                                            {% if u.class_name %}<span class="pill" style="padding:1px 6px;">Lớp: {{ u.class_name }}</span>{% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding:14px;">
+                            <form method="post" action="{% url 'accounts:assign_role' u.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <select name="role" style="padding:6px 10px; border-radius:6px; font-size:13px; font-weight:600; border:1px solid var(--color-border); background:var(--color-surface); cursor:pointer;" onchange="if (confirm('Bạn có chắc chắn muốn đổi vai trò của người dùng này sang vai trò mới không?')) { this.form.submit(); } else { this.value = '{{ u.role }}'; }">
+                                    {% for value, label in roles %}
+                                        <option value="{{ value }}" {% if value == u.role %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+                        <td style="padding:14px;">
+                            {% if u.is_active %}
+                                <span style="display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; background:#ecfdf5; color:#059669; border:1px solid #a7f3d0;">
+                                    <span style="width:6px; height:6px; border-radius:50%; background:#059669;"></span>
+                                    Hoạt động
+                                </span>
+                            {% else %}
+                                <span style="display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;">
+                                    <span style="width:6px; height:6px; border-radius:50%; background:#b91c1c;"></span>
+                                    Đã khóa
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td style="padding:14px; white-space:nowrap;">
+                            {% if u.is_active %}
+                                <button type="button" class="btn btn-sm btn-danger" style="font-weight:700; padding:6px 14px; font-size:12.5px;" onclick="openLockModal('{% url 'accounts:toggle_lock_account' u.pk %}', '{{ u.get_full_name|default:u.email|escapejs }}', '{{ u.email|escapejs }}')">Khóa</button>
+                            {% else %}
+                                <button type="button" class="btn btn-sm btn-primary" style="font-weight:700; padding:6px 14px; font-size:12.5px; background:#0c3b7a;" onclick="openUnlockModal('{% url 'accounts:toggle_lock_account' u.pk %}', '{{ u.get_full_name|default:u.email|escapejs }}', '{{ u.email|escapejs }}')">Mở khóa</button>
+                            {% endif %}
+                        </td>
+                        <td style="padding:14px; text-align:right;">
+                            <a class="btn btn-sm btn-secondary" href="{% url 'moderation:log_list' %}?user={{ u.pk }}" style="font-size:12.5px; padding:6px 12px; white-space:nowrap;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px; vertical-align:-1px;"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                                Lịch sử vi phạm
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding:36px 16px; color:var(--color-text-muted);">
+                            <div style="font-size:15px; font-weight:600;">Không tìm thấy tài khoản nào phù hợp</div>
+                            <p style="font-size:13px; margin:6px 0 0;">Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc.</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include "_pagination.html" with noun="tài khoản" %}
+    </div>
 </div>
+
+{# Modal Khóa tài khoản #}
+<div class="confirm-modal-overlay" id="lockConfirmOverlay" hidden onclick="closeLockModal(event)">
+    <div class="confirm-modal-card" style="max-width:440px;" onclick="event.stopPropagation();">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+            <div style="width:38px; height:38px; border-radius:50%; background:#fef2f2; color:#ef4444; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div>
+                <h2 style="margin:0; font-size:18px; color:var(--color-heading); font-weight:800;">Khóa tài khoản</h2>
+                <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">Tạm ngưng quyền truy cập hệ thống</div>
+            </div>
+        </div>
+        <p style="margin:0 0 16px; font-size:13.5px; color:var(--color-text-muted); line-height:1.5;">
+            Bạn đang chuẩn bị khóa tài khoản của <strong id="lockModalUserName" style="color:var(--color-text);"></strong> (<span id="lockModalUserEmail"></span>).
+        </p>
+        <form method="post" id="lockConfirmForm">
+            {% csrf_token %}
+            <div style="margin-bottom:18px;">
+                <label for="lockModalReason" style="display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:var(--color-text);">Lý do khóa <span style="color:#ef4444;">*</span></label>
+                <textarea name="reason" id="lockModalReason" rows="3" required placeholder="Nhập lý do khóa tài khoản (ví dụ: Vi phạm quy định cộng đồng, phát ngôn không phù hợp...)" style="width:100%; box-sizing:border-box; border-radius:8px; padding:10px 12px; font-size:13px; font-family:inherit; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); outline:none; resize:vertical;"></textarea>
+            </div>
+            <div class="confirm-modal-actions" style="display:flex; gap:10px;">
+                <button type="submit" class="btn btn-danger" style="flex:1; font-weight:700; padding:9px 16px;">Xác nhận khóa</button>
+                <button type="button" class="btn btn-secondary" onclick="closeLockModal(event)" style="flex:1; padding:9px 16px;">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Modal Mở khóa tài khoản #}
+<div class="confirm-modal-overlay" id="unlockConfirmOverlay" hidden onclick="closeUnlockModal(event)">
+    <div class="confirm-modal-card" style="max-width:440px;" onclick="event.stopPropagation();">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+            <div style="width:38px; height:38px; border-radius:50%; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+            </div>
+            <div>
+                <h2 style="margin:0; font-size:18px; color:var(--color-heading); font-weight:800;">Mở khóa tài khoản</h2>
+                <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">Khôi phục quyền truy cập hệ thống</div>
+            </div>
+        </div>
+        <p style="margin:0 0 16px; font-size:13.5px; color:var(--color-text-muted); line-height:1.5;">
+            Bạn có chắc chắn muốn mở khóa cho tài khoản <strong id="unlockModalUserName" style="color:var(--color-text);"></strong> (<span id="unlockModalUserEmail"></span>)? Người dùng sẽ có thể đăng nhập và hoạt động bình thường trở lại.
+        </p>
+        <form method="post" id="unlockConfirmForm">
+            {% csrf_token %}
+            <div style="margin-bottom:18px;">
+                <label for="unlockModalReason" style="display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:var(--color-text);">Ghi chú mở khóa (tùy chọn)</label>
+                <input type="text" name="reason" id="unlockModalReason" placeholder="Ghi chú (mặc định: Mở khóa tài khoản)" style="width:100%; box-sizing:border-box; border-radius:8px; padding:10px 12px; font-size:13px; font-family:inherit; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); outline:none;">
+            </div>
+            <div class="confirm-modal-actions" style="display:flex; gap:10px;">
+                <button type="submit" class="btn btn-primary" style="flex:1; font-weight:700; background:#0c3b7a; padding:9px 16px;">Xác nhận mở khóa</button>
+                <button type="button" class="btn btn-secondary" onclick="closeUnlockModal(event)" style="flex:1; padding:9px 16px;">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Modal Khóa hàng loạt tài khoản #}
+<div class="confirm-modal-overlay" id="bulkLockOverlay" hidden onclick="closeBulkLockModal(event)">
+    <div class="confirm-modal-card" style="max-width:440px;" onclick="event.stopPropagation();">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+            <div style="width:38px; height:38px; border-radius:50%; background:#fef2f2; color:#ef4444; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div>
+                <h2 style="margin:0; font-size:18px; color:var(--color-heading); font-weight:800;">Khóa hàng loạt tài khoản</h2>
+                <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">Tạm ngưng quyền truy cập của nhiều người dùng</div>
+            </div>
+        </div>
+        <p style="margin:0 0 16px; font-size:13.5px; color:var(--color-text-muted); line-height:1.5;">
+            Bạn đang chuẩn bị khóa <strong id="bulkLockCountText" style="color:#ef4444;">0</strong> tài khoản đã chọn. Các tài khoản này sẽ không thể đăng nhập vào hệ thống.
+        </p>
+        <div>
+            <div style="margin-bottom:18px;">
+                <label for="bulkLockReason" style="display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:var(--color-text);">Lý do khóa <span style="color:#ef4444;">*</span></label>
+                <textarea id="bulkLockReason" rows="3" required placeholder="Nhập lý do khóa các tài khoản này..." style="width:100%; box-sizing:border-box; border-radius:8px; padding:10px 12px; font-size:13px; font-family:inherit; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); outline:none; resize:vertical;"></textarea>
+            </div>
+            <div class="confirm-modal-actions" style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-danger" onclick="confirmBulkLock()" style="flex:1; font-weight:700; padding:9px 16px;">Xác nhận khóa</button>
+                <button type="button" class="btn btn-secondary" onclick="closeBulkLockModal(event)" style="flex:1; padding:9px 16px;">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Modal Mở khóa hàng loạt tài khoản #}
+<div class="confirm-modal-overlay" id="bulkUnlockOverlay" hidden onclick="closeBulkUnlockModal(event)">
+    <div class="confirm-modal-card" style="max-width:440px;" onclick="event.stopPropagation();">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+            <div style="width:38px; height:38px; border-radius:50%; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+            </div>
+            <div>
+                <h2 style="margin:0; font-size:18px; color:var(--color-heading); font-weight:800;">Mở khóa hàng loạt tài khoản</h2>
+                <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">Khôi phục quyền truy cập hệ thống</div>
+            </div>
+        </div>
+        <p style="margin:0 0 16px; font-size:13.5px; color:var(--color-text-muted); line-height:1.5;">
+            Bạn có chắc chắn muốn mở khóa cho <strong id="bulkUnlockCountText" style="color:#059669;">0</strong> tài khoản đã chọn?
+        </p>
+        <div>
+            <div style="margin-bottom:18px;">
+                <label for="bulkUnlockReason" style="display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:var(--color-text);">Ghi chú mở khóa (tùy chọn)</label>
+                <input type="text" id="bulkUnlockReason" placeholder="Ghi chú (mặc định: Mở khóa hàng loạt tài khoản)" style="width:100%; box-sizing:border-box; border-radius:8px; padding:10px 12px; font-size:13px; font-family:inherit; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); outline:none;">
+            </div>
+            <div class="confirm-modal-actions" style="display:flex; gap:10px;">
+                <button type="button" class="btn btn-primary" onclick="confirmBulkUnlock()" style="flex:1; font-weight:700; background:#0c3b7a; padding:9px 16px;">Xác nhận mở khóa</button>
+                <button type="button" class="btn btn-secondary" onclick="closeBulkUnlockModal(event)" style="flex:1; padding:9px 16px;">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getSelectedUserIds() {
+        var checkboxes = document.querySelectorAll('.user-checkbox:checked');
+        var ids = [];
+        checkboxes.forEach(function(cb) {
+            ids.push(cb.value);
+        });
+        return ids;
+    }
+
+    function updateBulkBar() {
+        var ids = getSelectedUserIds();
+        var bar = document.getElementById('bulkActionBar');
+        var countSpan = document.getElementById('bulkSelectedCount');
+        var selectAllCb = document.getElementById('selectAllCheckbox');
+        
+        var allCheckboxes = document.querySelectorAll('.user-checkbox:not(:disabled)');
+        if (selectAllCb) {
+            selectAllCb.checked = (allCheckboxes.length > 0 && ids.length === allCheckboxes.length);
+        }
+
+        if (ids.length > 0) {
+            countSpan.textContent = ids.length;
+            bar.style.display = 'flex';
+        } else {
+            bar.style.display = 'none';
+        }
+    }
+
+    function toggleSelectAll(masterCb) {
+        var allCheckboxes = document.querySelectorAll('.user-checkbox:not(:disabled)');
+        allCheckboxes.forEach(function(cb) {
+            cb.checked = masterCb.checked;
+        });
+        updateBulkBar();
+    }
+
+    function clearBulkSelection() {
+        var allCheckboxes = document.querySelectorAll('.user-checkbox');
+        allCheckboxes.forEach(function(cb) {
+            cb.checked = false;
+        });
+        var selectAllCb = document.getElementById('selectAllCheckbox');
+        if (selectAllCb) selectAllCb.checked = false;
+        updateBulkBar();
+    }
+
+    function submitBulkAction(action, extraData) {
+        var ids = getSelectedUserIds();
+        if (!ids.length) {
+            alert('Vui lòng chọn ít nhất một tài khoản.');
+            return;
+        }
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{% url 'accounts:bulk_action_users' %}";
+        
+        var csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
+        var csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+
+        var actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = action;
+        form.appendChild(actionInput);
+
+        if (extraData) {
+            for (var key in extraData) {
+                if (extraData.hasOwnProperty(key)) {
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = key;
+                    inp.value = extraData[key];
+                    form.appendChild(inp);
+                }
+            }
+        }
+
+        ids.forEach(function(id) {
+            var idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'user_ids';
+            idInput.value = id;
+            form.appendChild(idInput);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function executeBulkRoleChange() {
+        var roleSelect = document.getElementById('bulkRoleSelect');
+        var role = roleSelect.value;
+        if (!role) {
+            alert('Vui lòng chọn vai trò mới trước khi áp dụng.');
+            return;
+        }
+        var roleName = roleSelect.options[roleSelect.selectedIndex].text;
+        var count = getSelectedUserIds().length;
+        if (confirm('Bạn có chắc chắn muốn đổi vai trò của ' + count + ' tài khoản đã chọn thành "' + roleName + '" không?')) {
+            submitBulkAction('change_role', { role: role });
+        }
+    }
+
+    function openBulkLockModal() {
+        var count = getSelectedUserIds().length;
+        if (!count) {
+            alert('Vui lòng chọn ít nhất một tài khoản.');
+            return;
+        }
+        document.getElementById('bulkLockCountText').textContent = count;
+        var reasonInput = document.getElementById('bulkLockReason');
+        reasonInput.value = '';
+        var overlay = document.getElementById('bulkLockOverlay');
+        overlay.hidden = false;
+        setTimeout(function() { reasonInput.focus(); }, 100);
+    }
+
+    function closeBulkLockModal(event) {
+        if (event) event.preventDefault();
+        var overlay = document.getElementById('bulkLockOverlay');
+        if (overlay) overlay.hidden = true;
+    }
+
+    function confirmBulkLock() {
+        var reason = document.getElementById('bulkLockReason').value.trim();
+        if (!reason) {
+            alert('Vui lòng nhập lý do khi khóa tài khoản.');
+            return;
+        }
+        submitBulkAction('lock', { reason: reason });
+    }
+
+    function openBulkUnlockModal() {
+        var count = getSelectedUserIds().length;
+        if (!count) {
+            alert('Vui lòng chọn ít nhất một tài khoản.');
+            return;
+        }
+        document.getElementById('bulkUnlockCountText').textContent = count;
+        var reasonInput = document.getElementById('bulkUnlockReason');
+        reasonInput.value = '';
+        var overlay = document.getElementById('bulkUnlockOverlay');
+        overlay.hidden = false;
+        setTimeout(function() { reasonInput.focus(); }, 100);
+    }
+
+    function closeBulkUnlockModal(event) {
+        if (event) event.preventDefault();
+        var overlay = document.getElementById('bulkUnlockOverlay');
+        if (overlay) overlay.hidden = true;
+    }
+
+    function confirmBulkUnlock() {
+        var reason = document.getElementById('bulkUnlockReason').value.trim();
+        submitBulkAction('unlock', { reason: reason || 'Mở khóa hàng loạt tài khoản' });
+    }
+    function openLockModal(actionUrl, userName, userEmail) {
+        var form = document.getElementById('lockConfirmForm');
+        form.action = actionUrl;
+        document.getElementById('lockModalUserName').textContent = userName;
+        document.getElementById('lockModalUserEmail').textContent = userEmail;
+        var reasonInput = document.getElementById('lockModalReason');
+        reasonInput.value = '';
+        var overlay = document.getElementById('lockConfirmOverlay');
+        overlay.hidden = false;
+        setTimeout(function() { reasonInput.focus(); }, 100);
+    }
+
+    function closeLockModal(event) {
+        if (event) event.preventDefault();
+        var overlay = document.getElementById('lockConfirmOverlay');
+        if (overlay) overlay.hidden = true;
+    }
+
+    function openUnlockModal(actionUrl, userName, userEmail) {
+        var form = document.getElementById('unlockConfirmForm');
+        form.action = actionUrl;
+        document.getElementById('unlockModalUserName').textContent = userName;
+        document.getElementById('unlockModalUserEmail').textContent = userEmail;
+        var reasonInput = document.getElementById('unlockModalReason');
+        reasonInput.value = '';
+        var overlay = document.getElementById('unlockConfirmOverlay');
+        overlay.hidden = false;
+        setTimeout(function() { reasonInput.focus(); }, 100);
+    }
+
+    function closeUnlockModal(event) {
+        if (event) event.preventDefault();
+        var overlay = document.getElementById('unlockConfirmOverlay');
+        if (overlay) overlay.hidden = true;
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            var lockOverlay = document.getElementById('lockConfirmOverlay');
+            if (lockOverlay && !lockOverlay.hidden) lockOverlay.hidden = true;
+            var unlockOverlay = document.getElementById('unlockConfirmOverlay');
+            if (unlockOverlay && !unlockOverlay.hidden) unlockOverlay.hidden = true;
+            var bulkLockOverlay = document.getElementById('bulkLockOverlay');
+            if (bulkLockOverlay && !bulkLockOverlay.hidden) bulkLockOverlay.hidden = true;
+            var bulkUnlockOverlay = document.getElementById('bulkUnlockOverlay');
+            if (bulkUnlockOverlay && !bulkUnlockOverlay.hidden) bulkUnlockOverlay.hidden = true;
+        }
+    });
+</script>
 {% endblock %}

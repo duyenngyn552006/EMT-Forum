@@ -170,7 +170,11 @@ def toggle_like(request, model_key, object_id):
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         count = Like.objects.filter(content_type=content_type, object_id=obj.pk).count()
-        return JsonResponse({"liked": liked, "count": count, "reaction": reaction})
+        return JsonResponse({
+            "liked": liked,
+            "count": count,
+            "reaction": reaction,
+        })
     return redirect(obj.get_absolute_url())
 
 
@@ -276,6 +280,7 @@ def saved_list(request):
         rows.append({
             "label": str(target), "url": target.get_absolute_url(),
             "model_key": item.content_type.model, "object_id": target.pk,
+            "target": target, "saved_at": item.created_at,
         })
     return render(request, "interactions/saved_list.html", {"rows": rows})
 

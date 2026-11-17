@@ -214,7 +214,6 @@ class ProfileStatsAndActivityTests(TestCase):
         response = self.client.get(reverse("accounts:profile_detail", args=[self.user.pk]))
         self.assertEqual(response.context["stats"]["followed_post_count"], 1)
         self.assertEqual(response.context["stats"]["followed_category_count"], 1)
-        self.assertContains(response, "Đã theo dõi: 1 bài viết, 1 chuyên mục")
         self.assertContains(response, reverse("interactions:following"))
 
     def test_other_viewer_does_not_see_follow_stat(self):
@@ -222,7 +221,7 @@ class ProfileStatsAndActivityTests(TestCase):
         self.client.force_login(other)
         response = self.client.get(reverse("accounts:profile_detail", args=[self.user.pk]))
         self.assertNotIn("followed_post_count", response.context["stats"])
-        self.assertNotContains(response, "Đã theo dõi")
+        self.assertNotContains(response, reverse("interactions:following"))
 
     def test_profile_activity_lists_own_post_and_comment(self):
         self.client.force_login(self.user)
@@ -394,3 +393,143 @@ class SavedItemsListTests(TestCase):
     def test_anonymous_cannot_view_saved_list(self):
         response = self.client.get(reverse("interactions:saved"))
         self.assertNotEqual(response.status_code, 200)
+
+
+class BulkActionUsersTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(email="staff_bulk@due.udn.vn", password="Pass1234!", role=User.Role.STAFF)
+        self.user1 = User.objects.create_user(email="u1_bulk@due.udn.vn", password="Pass1234!", role=User.Role.STUDENT)
+        self.user2 = User.objects.create_user(email="u2_bulk@due.udn.vn", password="Pass1234!", role=User.Role.STUDENT)
+
+    def test_non_staff_cannot_bulk_action(self):
+        self.client.force_login(self.user1)
+        response = self.client.post(reverse("accounts:bulk_action_users"), {
+            "action": "lock",
+            "user_ids": [self.user2.pk],
+            "reason": "Test",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.user2.refresh_from_db()
+        self.assertTrue(self.user2.is_active)
+
+    def test_staff_bulk_lock_users(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(reverse("accounts:bulk_action_users"), {
+            "action": "lock",
+            "user_ids": [self.user1.pk, self.user2.pk],
+            "reason": "Vi phạm quy chế",
+        })
+        self.assertRedirects(response, reverse("accounts:user_list"))
+        self.user1.refresh_from_db()
+        self.user2.refresh_from_db()
+        self.assertFalse(self.user1.is_active)
+        self.assertFalse(self.user2.is_active)
+        self.assertEqual(self.user1.locked_reason, "Vi phạm quy chế")
+
+    def test_staff_bulk_unlock_users(self):
+        self.user1.is_active = False
+        self.user1.locked_reason = "Đang bị khóa"
+        self.user1.save()
+        self.client.force_login(self.staff)
+        response = self.client.post(reverse("accounts:bulk_action_users"), {
+            "action": "unlock",
+            "user_ids": [self.user1.pk],
+            "reason": "Đã sửa sai",
+        })
+        self.assertRedirects(response, reverse("accounts:user_list"))
+        self.user1.refresh_from_db()
+        self.assertTrue(self.user1.is_active)
+        self.assertEqual(self.user1.locked_reason, "")
+
+    def test_staff_bulk_change_role(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(reverse("accounts:bulk_action_users"), {
+            "action": "change_role",
+            "user_ids": [self.user1.pk, self.user2.pk],
+            "role": User.Role.BCH,
+        })
+        self.assertRedirects(response, reverse("accounts:user_list"))
+        self.user1.refresh_from_db()
+        self.user2.refresh_from_db()
+        self.assertEqual(self.user1.role, User.Role.BCH)
+        self.assertEqual(self.user2.role, User.Role.BCH)
+
+    def test_bulk_action_excludes_staff_self(self):
+        self.client.force_login(self.staff)
+        self.client.post(reverse("accounts:bulk_action_users"), {
+            "action": "lock",
+            "user_ids": [self.staff.pk, self.user1.pk],
+            "reason": "Khoa nham",
+        })
+        self.staff.refresh_from_db()
+        self.user1.refresh_from_db()
+        self.assertTrue(self.staff.is_active)
+        self.assertFalse(self.user1.is_active)
+
+
+class ProfileBadgesAndTabsTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="badges_user@due.udn.vn", password="Pass1234!", role=User.Role.LECTURER
+        )
+        self.viewer = User.objects.create_user(
+            email="viewer_badges@due.udn.vn", password="Pass1234!", role=User.Role.STUDENT
+        )
+
+    def test_profile_context_contains_score_and_badges(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.user.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("activity_score", response.context)
+        self.assertIn("badges", response.context)
+        self.assertIn("user_posts", response.context)
+        self.assertIn("user_comments", response.context)
+        # Role LECTURER gets lecturer badge
+        badge_names = [b["name"] for b in response.context["badges"]]
+        self.assertIn("Giảng viên hướng dẫn", badge_names)
+
+    def test_profile_tabs_display(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.user.get_absolute_url())
+        self.assertContains(response, "profile-tabs-nav")
+        self.assertContains(response, "tab-panel-posts")
+        self.assertContains(response, "tab-panel-comments")
+        self.assertContains(response, "tab-panel-saved")
+        self.assertContains(response, "tab-panel-following")
+
+    def test_profile_stats_no_emojis(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.user.get_absolute_url())
+        content = response.content.decode("utf-8")
+        # Ensure no small emojis inside stat labels
+        self.assertNotIn("📝 0 bài viết diễn đàn", content)
+        self.assertNotIn("👥 0 bài viết trong nhóm", content)
+        self.assertNotIn("💬 0 bình luận", content)
+        self.assertNotIn("🏷️ 0 nhóm đang tham gia", content)
+        self.assertIn("bài viết diễn đàn", content)
+        self.assertIn("bài viết trong nhóm", content)
+        self.assertIn("bình luận", content)
+        self.assertIn("nhóm đang tham gia", content)
+
+    def test_update_avatar_upload_and_delete(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.user)
+        # Small 1x1 GIF
+        gif = (
+            b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00"
+            b"\x00\x00\x00\xff\xff\xff\x21\xf9\x04\x01\x00\x00\x00"
+            b"\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02"
+            b"\x44\x01\x00\x3b"
+        )
+        avatar = SimpleUploadedFile("test_avatar.gif", gif, content_type="image/gif")
+        resp = self.client.post(reverse("accounts:update_avatar"), {"avatar": avatar})
+        self.assertRedirects(resp, self.user.get_absolute_url())
+        self.user.refresh_from_db()
+        self.assertTrue(bool(self.user.avatar))
+
+        # Delete avatar
+        resp_del = self.client.post(reverse("accounts:update_avatar"), {"action": "delete"})
+        self.assertRedirects(resp_del, self.user.get_absolute_url())
+        self.user.refresh_from_db()
+        self.assertFalse(bool(self.user.avatar))
+

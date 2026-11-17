@@ -1,15 +1,42 @@
 {% extends "base.html" %}
-{% block title %}Bài viết đã lưu{% endblock %}
+{% block title %}Bài viết đã lưu - EMT Forum{% endblock %}
+{% block breadcrumb %}
+<nav class="breadcrumb-nav" aria-label="Đường dẫn">
+    <a href="{% url 'home' %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Trang chủ</span>
+    </a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'accounts:my_profile' %}">Hồ sơ của tôi</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-current">Bài viết đã lưu</span>
+</nav>
+{% endblock %}
 {% block content %}
 <div class="card">
-    <h1>Bài viết đã lưu</h1>
+    <h1 style="margin:0; font-size:22px; font-weight:800; color:var(--color-heading);">Bài viết đã lưu</h1>
 </div>
 {% for row in rows %}
-<div class="list-card">
+<div class="list-card" style="align-items:center; justify-content:space-between; gap:16px;">
     <div class="list-body">
-        <h3 class="list-title"><a href="{{ row.url }}">{{ row.label }}</a></h3>
+        {% if row.target.category or row.target.get_kind_display or row.target.author %}
+            <div class="list-meta" style="margin-bottom:4px;">
+                {% if row.target.category %}<span class="badge">{{ row.target.category.name }}</span>{% endif %}
+                {% if row.target.get_kind_display %}<span class="badge">{{ row.target.get_kind_display }}</span>{% endif %}
+                {% if row.target.author %}
+                    <span><a class="author-link" href="{{ row.target.author.get_absolute_url }}">{{ row.target.author }}</a></span>
+                {% endif %}
+                {% if row.target.created_at %}
+                    <span>· {{ row.target.created_at|date:"d/m/Y" }}</span>
+                {% endif %}
+            </div>
+        {% endif %}
+        <h3 class="list-title" style="margin:0 0 4px;"><a href="{{ row.url }}">{{ row.label }}</a></h3>
+        {% if row.target.body %}
+            <p class="list-excerpt" style="margin:0; color:var(--color-text-muted); font-size:13px;">{{ row.target.body|striptags|truncatewords:24 }}</p>
+        {% endif %}
     </div>
-    <form method="post" action="{% url 'interactions:toggle_save' row.model_key row.object_id %}">
+    <form method="post" action="{% url 'interactions:toggle_save' row.model_key row.object_id %}" style="flex-shrink:0;">
         {% csrf_token %}
         <input type="hidden" name="next" value="{% url 'interactions:saved' %}">
         <button class="btn btn-secondary" type="submit">Bỏ lưu</button>
@@ -17,7 +44,7 @@
 </div>
 {% empty %}
 <div class="card">
-    <p>Bạn chưa lưu bài viết nào. Mở một bài viết rồi bấm “🔖 Lưu”.</p>
+    <p style="color:var(--color-text-muted); margin:0;">Bạn chưa lưu bài viết nào. Mở một bài viết rồi bấm “🔖 Lưu”.</p>
 </div>
 {% endfor %}
 {% endblock %}

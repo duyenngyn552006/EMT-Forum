@@ -80,6 +80,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "notifications.context_processors.notification_bell",
                 "search.context_processors.recent_search_bar",
+                "config.context_processors.nav_context",
             ],
             # Tag phan trang dung chung ({% page_url %}, {% page_window %}) - xem templates/_pagination.html
             "builtins": ["config.pagination_tags"],

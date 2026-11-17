@@ -1,49 +1,480 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{% block head_title %}{% endblock %} - EMT Forum{% endblock %}
 {% block extra_head %}
 <style>
-    .auth-modal-overlay {
-        position: fixed; inset: 0; background: rgba(16, 35, 63, 0.55);
-        display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px;
+    /* ==========================================================================
+       SPLIT-SCREEN AUTHENTICATION LAYOUT (Login / Signup)
+       ========================================================================== */
+    .auth-split-wrapper {
+        display: flex;
+        min-height: 560px;
+        max-width: 1040px;
+        margin: 32px auto 48px;
+        background: var(--color-surface, #ffffff);
+        border-radius: 20px;
+        box-shadow: 0 20px 45px -10px rgba(12, 59, 122, 0.16), 0 10px 20px -5px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        border: 1px solid rgba(226, 232, 240, 0.85);
     }
-    .auth-modal-card {
-        position: relative; background: #fff; border-radius: 12px; padding: 32px;
-        width: 100%; max-width: 420px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-        max-height: 90vh; overflow-y: auto;
+
+    html[data-theme="dark"] .auth-split-wrapper {
+        background: #111827;
+        border-color: #1f2937;
+        box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.5);
     }
-    .auth-modal-close {
-        position: absolute; top: 10px; right: 14px; font-size: 24px; line-height: 1;
-        color: #9ca3af; text-decoration: none;
+
+    /* Nửa trái: Banner & Khẩu hiệu DUE */
+    .auth-split-banner {
+        flex: 1.1;
+        position: relative;
+        background: linear-gradient(145deg, #092754 0%, #0c3b7a 45%, #0284c7 100%);
+        color: #ffffff;
+        padding: 44px 38px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow: hidden;
     }
-    .auth-modal-close:hover { color: #10233f; }
-    .auth-modal-card h1 { color: #10233f; font-size: 22px; margin: 0 0 16px; }
-    .auth-modal-card p { font-size: 14px; color: #374151; margin: 0 0 14px; }
-    .auth-modal-card a { color: #10233f; font-weight: 600; }
-    .auth-modal-card form p { margin: 0 0 14px; }
-    .auth-modal-card form label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #1a1a1a; }
-    .auth-modal-card input[type=text],
-    .auth-modal-card input[type=email],
-    .auth-modal-card input[type=password],
-    .auth-modal-card input[type=date],
-    .auth-modal-card input[type=time] {
-        width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px;
-        font-size: 14px; box-sizing: border-box;
+
+    .auth-split-banner::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: url('{% static "img/banners/banner-forum.jpg" %}');
+        background-size: cover;
+        background-position: center;
+        opacity: 0.18;
+        mix-blend-mode: overlay;
     }
-    .auth-modal-card input:focus { outline: none; border-color: #10233f; box-shadow: 0 0 0 3px rgba(16, 35, 63, 0.15); }
-    .auth-modal-card input[type=checkbox] { width: auto; margin-right: 6px; }
-    .auth-modal-card button[type=submit] {
-        width: 100%; background: #10233f; color: #fff; border: none; padding: 12px;
-        border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px;
+
+    .auth-split-banner::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(9, 39, 84, 0.4) 0%, rgba(12, 59, 122, 0.8) 55%, rgba(9, 39, 84, 0.95) 100%);
     }
-    .auth-modal-card button[type=submit]:hover { background: #16305c; }
-    .auth-modal-card ul.errorlist { color: #b91c1c; font-size: 12px; list-style: none; padding: 0; margin: 0 0 8px; }
+
+    .auth-banner-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        justify-content: space-between;
+    }
+
+    .auth-banner-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        background: rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #f8fafc;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        width: fit-content;
+    }
+
+    .auth-banner-badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #f26522; /* Cam DUE */
+        display: inline-block;
+    }
+
+    .auth-banner-body {
+        margin: 36px 0;
+    }
+
+    .auth-banner-title {
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.35;
+        margin: 0 0 14px;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+    }
+
+    .auth-banner-slogan {
+        font-size: 14.5px;
+        line-height: 1.6;
+        color: #dbeafe;
+        margin: 0 0 24px;
+    }
+
+    .auth-hero-features {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .auth-feature-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13.5px;
+        color: #f1f5f9;
+    }
+
+    .auth-feature-check {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(242, 101, 34, 0.25);
+        color: #fb923c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+        border: 1px solid rgba(242, 101, 34, 0.4);
+    }
+
+    .auth-banner-footer {
+        font-size: 12.5px;
+        color: #93c5fd;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Nửa phải: Khung Form */
+    .auth-split-form {
+        flex: 1;
+        padding: 44px 38px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        background: var(--color-surface, #ffffff);
+    }
+
+    html[data-theme="dark"] .auth-split-form {
+        background: #111827;
+    }
+
+    .auth-form-card {
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .auth-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--color-text-muted);
+        text-decoration: none;
+        margin-bottom: 20px;
+        transition: color 0.15s ease;
+    }
+
+    .auth-back-link:hover {
+        color: var(--color-primary);
+    }
+
+    .auth-form-header {
+        margin-bottom: 24px;
+    }
+
+    .auth-form-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--color-heading);
+        margin: 0 0 8px;
+    }
+
+    .auth-form-subtitle {
+        font-size: 13.5px;
+        color: var(--color-text-muted);
+        margin: 0;
+    }
+
+    .auth-form-subtitle a {
+        color: var(--color-primary);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .auth-form-subtitle a:hover {
+        text-decoration: underline;
+    }
+
+    .auth-error-box {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #b91c1c;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 13.5px;
+        margin-bottom: 20px;
+    }
+
+    html[data-theme="dark"] .auth-error-box {
+        background: #450a0a;
+        border-color: #7f1d1d;
+        color: #fca5a5;
+    }
+
+    .auth-field-group {
+        margin-bottom: 18px;
+    }
+
+    .auth-field-label-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+
+    .auth-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text);
+        margin: 0;
+    }
+
+    /* Nút chọn nhanh đuôi @due.udn.vn */
+    .suffix-quick-btn {
+        background: #eff6ff;
+        color: #0c3b7a;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        padding: 2px 9px;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .suffix-quick-btn:hover {
+        background: #0c3b7a;
+        color: #ffffff;
+        border-color: #0c3b7a;
+        transform: translateY(-1px);
+    }
+
+    html[data-theme="dark"] .suffix-quick-btn {
+        background: #1e3a8a;
+        color: #bfdbfe;
+        border-color: #2563eb;
+    }
+
+    html[data-theme="dark"] .suffix-quick-btn:hover {
+        background: #3b82f6;
+        color: #ffffff;
+    }
+
+    .auth-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .auth-input {
+        width: 100%;
+        padding: 11px 14px;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        font-size: 14px;
+        background: var(--color-surface);
+        color: var(--color-text);
+        box-sizing: border-box;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .auth-input:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(12, 59, 122, 0.15);
+    }
+
+    .auth-input.is-invalid {
+        border-color: #ef4444;
+    }
+
+    /* Nút Ẩn/Hiện Mật khẩu */
+    .password-input-wrap .auth-input {
+        padding-right: 44px;
+    }
+
+    .password-toggle-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--color-text-muted);
+        padding: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: color 0.15s ease;
+    }
+
+    .password-toggle-btn:hover {
+        color: var(--color-primary);
+    }
+
+    .auth-forgot-link {
+        font-size: 12.5px;
+        color: var(--color-text-muted);
+        text-decoration: none;
+        transition: color 0.15s ease;
+    }
+
+    .auth-forgot-link:hover {
+        color: var(--color-primary);
+        text-decoration: underline;
+    }
+
+    .auth-field-error {
+        display: block;
+        color: #ef4444;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .auth-checkbox-row {
+        display: flex;
+        align-items: center;
+        margin: 14px 0 22px;
+    }
+
+    .custom-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+        color: var(--color-text);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .custom-checkbox-label input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #0c3b7a;
+    }
+
+    .auth-submit-btn {
+        width: 100%;
+        background: #0c3b7a;
+        color: #ffffff;
+        border: none;
+        padding: 12px 18px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(12, 59, 122, 0.25);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .auth-submit-btn:hover {
+        background: #092f64;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(12, 59, 122, 0.35);
+    }
+
+    /* Fallback styles for allauth elements in other entrance views */
+    .auth-form-card form p { margin: 0 0 14px; }
+    .auth-form-card form label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--color-text); }
+    .auth-form-card input[type=text],
+    .auth-form-card input[type=email],
+    .auth-form-card input[type=password],
+    .auth-form-card input[type=date],
+    .auth-form-card input[type=time] {
+        width: 100%; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 10px;
+        font-size: 14px; box-sizing: border-box; background: var(--color-surface); color: var(--color-text);
+    }
+    .auth-form-card input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(12, 59, 122, 0.15); }
+    .auth-form-card button[type=submit] {
+        width: 100%; background: #0c3b7a; color: #fff; border: none; padding: 12px;
+        border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 6px;
+    }
+    .auth-form-card button[type=submit]:hover { background: #092f64; }
+    .auth-form-card ul.errorlist { color: #ef4444; font-size: 12px; list-style: none; padding: 0; margin: 0 0 8px; }
+
+    @media (max-width: 860px) {
+        .auth-split-wrapper {
+            flex-direction: column;
+            max-width: 480px;
+            margin: 20px auto;
+        }
+        .auth-split-banner {
+            padding: 30px 24px;
+        }
+        .auth-banner-body {
+            margin: 20px 0;
+        }
+        .auth-banner-title {
+            font-size: 22px;
+        }
+        .auth-split-form {
+            padding: 32px 24px;
+        }
+    }
 </style>
 {% endblock %}
 {% block content %}
-<div class="auth-modal-overlay">
-    <div class="auth-modal-card">
-        <a href="{% url 'home' %}" class="auth-modal-close" aria-label="Đóng">&times;</a>
-        {% block entrance %}{% endblock %}
+<div class="auth-split-wrapper">
+    {# Nửa trái: Banner & Khẩu hiệu Khoa TMĐT #}
+    <div class="auth-split-banner">
+        <div class="auth-banner-content">
+            <div class="auth-banner-badge">
+                <span class="dot"></span>
+                <span>Khoa Thương mại điện tử – DUE</span>
+            </div>
+
+            <div class="auth-banner-body">
+                <h1 class="auth-banner-title">Khoa Thương mại điện tử – Kết nối, Chia sẻ, Phát triển</h1>
+                <p class="auth-banner-slogan">
+                    Không gian học thuật, trao đổi kinh nghiệm và kết nối cộng đồng sinh viên &amp; giảng viên Trường Đại học Kinh tế - Đại học Đà Nẵng.
+                </p>
+
+                <div class="auth-hero-features">
+                    <div class="auth-feature-item">
+                        <span class="auth-feature-check">✓</span>
+                        <span>Hỏi đáp học vụ, đăng ký môn học &amp; đề tài nghiên cứu</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <span class="auth-feature-check">✓</span>
+                        <span>Tìm kiếm đồng đội học nhóm, đồ án &amp; CLB sinh viên</span>
+                    </div>
+                    <div class="auth-feature-item">
+                        <span class="auth-feature-check">✓</span>
+                        <span>Cập nhật nhanh thông báo học bổng &amp; sự kiện nổi bật</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-banner-footer">
+                <span>Trường Đại học Kinh tế – Đại học Đà Nẵng (DUE)</span>
+            </div>
+        </div>
+    </div>
+
+    {# Nửa phải: Form tương tác #}
+    <div class="auth-split-form">
+        <div class="auth-form-card">
+            <a href="{% url 'home' %}" class="auth-back-link">
+                ← Về trang chủ
+            </a>
+            {% block entrance %}{% endblock %}
+        </div>
     </div>
 </div>
 {% endblock %}
