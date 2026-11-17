@@ -22,6 +22,7 @@ class Notification(models.Model):
         REPLY = "reply", "Trả lời bình luận"
         ANSWER_ACCEPTED = "answer_accepted", "Câu trả lời được chọn"
         FOLLOW_UPDATE = "follow_update", "Cập nhật theo dõi"
+        DEADLINE_REMINDER = "deadline_reminder", "Nhắc hạn chót"
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     actor = models.ForeignKey(
@@ -51,9 +52,63 @@ class NotificationPreference(models.Model):
     notify_on_like = models.BooleanField(default=True)
     notify_on_follow = models.BooleanField(default=True)
     notify_on_announcement = models.BooleanField(default=True)
+    notify_on_deadline = models.BooleanField(default=True)
     notify_on_group_activity = models.BooleanField(default=True)
     notify_on_moderation = models.BooleanField(default=True)
     email_digest = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Cài đặt thông báo của {self.user}"
+
+
+class DeadlineReminderLog(models.Model):
+    """Ghi nhan moi lan da xu ly nhac han cho tung sinh vien, tranh gui trung."""
+
+    class Stage(models.TextChoices):
+        TWO_DAYS = "two_days", "Trước 2 ngày"
+        ONE_DAY = "one_day", "Trước 1 ngày"
+        THREE_HOURS = "three_hours", "Trước 3 giờ"
+
+    announcement = models.ForeignKey(
+        "announcements.Announcement", on_delete=models.CASCADE, related_name="deadline_reminder_logs"
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="deadline_reminder_logs"
+    )
+    stage = models.CharField(max_length=20, choices=Stage.choices)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["announcement", "recipient", "stage"],
+                name="unique_announcement_deadline_reminder",
+            )
+        ]
+        ordering = ["-sent_at"]
+
+    def __str__(self):
+        return f"{self.announcement_id} - {self.recipient_id} - {self.stage}"
+
+
+class DeadlineCompletion(models.Model):
+    """Sinh vien danh dau da hoan thanh cong viec lien quan den mot han chot."""
+
+    announcement = models.ForeignKey(
+        "announcements.Announcement", on_delete=models.CASCADE, related_name="deadline_completions"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="deadline_completions"
+    )
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["announcement", "user"],
+                name="unique_announcement_deadline_completion",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} completed {self.announcement_id}"

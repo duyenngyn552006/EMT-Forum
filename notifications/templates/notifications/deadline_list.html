@@ -1,0 +1,99 @@
+
+{% extends "base.html" %}
+{% block title %}Hạn chót của tôi{% endblock %}
+
+{% block content %}
+
+<div class="notice-page">
+
+    <div class="notice-hero">
+        <h1>⏰ Deadline Radar</h1>
+        <p>
+            Theo dõi các thông báo có hạn đăng ký hoặc nộp.
+            Hệ thống hỗ trợ nhắc trước 2 ngày, 1 ngày và 3 giờ.
+        </p>
+
+        <div class="notice-actions">
+            <a class="notice-action" href="{% url 'notifications:list' %}">
+                ← Quay lại thông báo
+            </a>
+        </div>
+    </div>
+
+
+    <div class="notice-toolbar">
+        <div class="notice-toolbar-title">
+            DANH SÁCH HẠN CHÓT
+        </div>
+
+        <span class="notice-badge">
+            {{ deadlines|length }} hạn chót
+        </span>
+    </div>
+
+
+    {% for item in deadlines %}
+
+    <div class="deadline-card">
+
+        <div class="notice-meta">
+            <span class="notice-badge">
+                📌 Hạn chót
+            </span>
+        </div>
+
+        <h3>
+            <a href="{{ item.get_absolute_url }}">
+                {{ item.title }}
+            </a>
+        </h3>
+
+        <div class="deadline-info">
+            <span>
+                ⏰ {{ item.deadline_at|date:"d/m/Y H:i" }}
+            </span>
+
+            <span>
+                ♙ Đăng bởi {{ item.author }}
+            </span>
+        </div>
+
+        {% if item.pk in completed_ids %}
+
+            <span class="deadline-status">
+                ✓ Đã hoàn thành
+            </span>
+
+        {% else %}
+
+            <form method="post"
+                  action="{% url 'notifications:complete_deadline' item.pk %}"
+                  style="margin:0;">
+
+                {% csrf_token %}
+
+                <button type="submit" class="notice-action primary">
+                    ✓ Đánh dấu đã hoàn thành
+                </button>
+
+            </form>
+
+        {% endif %}
+
+    </div>
+
+    {% empty %}
+
+    <div class="notice-empty">
+        <div class="notice-empty-icon">🎉</div>
+        <h3>Không có hạn chót sắp tới</h3>
+        <p>
+            Hiện tại bạn không có thông báo nào cần hoàn thành.
+        </p>
+    </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock %}

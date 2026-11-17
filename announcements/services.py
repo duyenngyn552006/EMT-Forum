@@ -33,13 +33,17 @@ def unpin_announcement(announcement: Announcement, actor):
     return announcement
 
 
-def create_announcement(author, kind, title, body, event_datetime=None, featured_image=None, event_end_datetime=None):
+def create_announcement(
+    author, kind, title, body, event_datetime=None, featured_image=None,
+    event_end_datetime=None, deadline_at=None,
+):
     body = sanitize_html(body)
     keyword = find_sensitive_keyword(title, body)
     status = ContentStatus.PENDING_REVIEW if keyword else ContentStatus.PUBLISHED
     announcement = Announcement.objects.create(
         author=author, kind=kind, title=title, body=body, status=status, event_datetime=event_datetime,
         event_end_datetime=event_end_datetime,
+        deadline_at=deadline_at,
         featured_image=featured_image,
     )
     if keyword:
@@ -60,17 +64,25 @@ def create_announcement(author, kind, title, body, event_datetime=None, featured
 
 
 def update_announcement(
-    announcement: Announcement, editor, title, body, event_datetime=None, featured_image=None, event_end_datetime=None,
+    announcement: Announcement, editor, title, body, event_datetime=None,
+    featured_image=None, event_end_datetime=None, deadline_at=None,
 ):
     AnnouncementEditHistory.objects.create(
         announcement=announcement, editor=editor, title=announcement.title, body=announcement.body
     )
     body = sanitize_html(body)
     keyword = find_sensitive_keyword(title, body)
+    if announcement.deadline_at != deadline_at:
+        # Han chot thay doi -> cho phep he thong tinh lai cac moc nhac theo han moi.
+        from notifications.models import DeadlineReminderLog
+
+        DeadlineReminderLog.objects.filter(announcement=announcement).delete()
+
     announcement.title = title
     announcement.body = body
     announcement.event_datetime = event_datetime
     announcement.event_end_datetime = event_end_datetime
+    announcement.deadline_at = deadline_at
     if featured_image is False:
         announcement.featured_image = None
     elif featured_image is not None:

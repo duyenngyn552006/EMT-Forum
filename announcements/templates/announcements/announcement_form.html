@@ -50,7 +50,7 @@
         {% csrf_token %}
         {{ form.non_field_errors }}
         {% for field in form %}
-            {% if field.name != "event_time_mode" and field.name != "event_datetime" and field.name != "event_end_datetime" %}
+            {% if field.name != "event_time_mode" and field.name != "event_datetime" and field.name != "event_end_datetime" and field.name != "deadline_at" %}
                 <p>
                     {{ field.label_tag }}
                     {{ field }}
@@ -81,6 +81,21 @@
             <p class="event-hint">Chọn “Một mốc thời gian” cho sự kiện diễn ra tại một thời điểm, hoặc “Khoảng thời gian” cho sự kiện có giờ bắt đầu và kết thúc (có thể kéo dài nhiều ngày).</p>
         </div>
 
+        <div class="event-panel" id="deadlinePanel">
+            <div class="event-panel-head" id="deadlineHeading">⏰ Hạn chót đăng ký / nộp</div>
+            <div class="event-field">
+                <div class="dt-pair">
+                    {% for w in form.deadline_at.subwidgets %}{{ w }}{% endfor %}
+                </div>
+                {% if form.deadline_at.errors %}
+                    <ul class="field-errors">{% for e in form.deadline_at.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+                <p class="event-hint" id="deadlineHelp">
+                    Không bắt buộc. Hệ thống sẽ nhắc sinh viên trước hạn 2 ngày, 1 ngày và 3 giờ.
+                </p>
+            </div>
+        </div>
+
         <div class="attach-section">
             <h3>Ảnh đính kèm <span class="event-hint">(không bắt buộc, tối đa {{ formset.max_num }} ảnh)</span></h3>
             {{ formset.management_form }}
@@ -102,6 +117,8 @@
         var panel = document.getElementById('eventPanel');
         var kind = document.getElementById('id_kind');
         var startLabel = document.getElementById('eventStartLabel');
+        var deadlineHeading = document.getElementById('deadlineHeading');
+        var deadlineHelp = document.getElementById('deadlineHelp');
         if (!panel) { return; }
 
         function currentMode() {
@@ -111,7 +128,16 @@
 
         function sync() {
             // Chỉ thông báo loại "Sự kiện" mới có khối thời gian
-            panel.hidden = !!kind && kind.value !== 'event';
+            var isEvent = !!kind && kind.value === 'event';
+            panel.hidden = !isEvent;
+            if (deadlineHeading && deadlineHelp) {
+                deadlineHeading.textContent = isEvent
+                    ? '⏰ Hạn chót đăng ký sự kiện'
+                    : '⏰ Hạn chót đăng ký / nộp';
+                deadlineHelp.textContent = isEvent
+                    ? 'Nhập thời điểm cuối cùng sinh viên được phép đăng ký. Hệ thống nhắc trước hạn 2 ngày, 1 ngày và 3 giờ.'
+                    : 'Không bắt buộc. Hệ thống sẽ nhắc sinh viên trước hạn 2 ngày, 1 ngày và 3 giờ.';
+            }
             var mode = currentMode();
             panel.dataset.mode = mode;
             startLabel.textContent = mode === 'range' ? 'Bắt đầu' : 'Thời điểm diễn ra';

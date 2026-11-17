@@ -1,32 +1,92 @@
+
 {% extends "base.html" %}
 {% block title %}Thông báo cá nhân{% endblock %}
+
 {% block content %}
 <div class="card">
     <h1>Thông báo của bạn</h1>
+
     <a class="btn btn-secondary" href="{% url 'notifications:preferences' %}">Cài đặt</a>
+    <a class="btn btn-secondary" href="{% url 'notifications:deadlines' %}">Hạn chót của tôi</a>
     <a class="btn btn-secondary" href="{% url 'interactions:following' %}">Mục đang theo dõi</a>
+
     <form method="post" action="{% url 'notifications:mark_all_read' %}" style="display:inline;">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
         <button class="btn btn-secondary" type="submit">Đánh dấu tất cả đã đọc</button>
     </form>
+
+    <!-- Lọc trạng thái thông báo -->
     <div class="filter-pills" style="margin-top:12px;">
-        <a href="?filter=all" {% if current_filter == "all" %}class="active"{% endif %}>Tất cả</a>
-        <a href="?filter=unread" {% if current_filter == "unread" %}class="active"{% endif %}>Chưa đọc</a>
+        <a href="?filter=all&type=all"
+           {% if current_filter == "all" %}class="active"{% endif %}>
+            Tất cả
+        </a>
+
+        <a href="?filter=unread&type=all"
+           {% if current_filter == "unread" %}class="active"{% endif %}>
+            Chưa đọc
+        </a>
+    </div>
+
+    <!-- Lọc theo loại thông báo -->
+    <div class="filter-pills" style="margin-top:10px;">
+        <a href="?filter={{ current_filter }}&type=announcement"
+           {% if current_type == "announcement" %}class="active"{% endif %}>
+            Thông báo mới
+        </a>
+
+
+
+        <a href="?filter={{ current_filter }}&type=comment"
+           {% if current_type == "comment" %}class="active"{% endif %}>
+            Bình luận
+        </a>
+
+        <a href="?filter={{ current_filter }}&type=group"
+           {% if current_type == "group" %}class="active"{% endif %}>
+            Hoạt động nhóm
+        </a>
     </div>
 </div>
+
 {% for n in notifications %}
-<div class="card" style="{% if not n.is_read %}border-left:4px solid #10233f;{% endif %}">
-    <p>{{ n.get_verb_display }}{% if n.message %}: {{ n.message }}{% endif %}</p>
-    <p><small>{{ n.created_at|date:"d/m/Y H:i" }}</small></p>
+<div class="card" {% if not n.is_read %}style="border-left:4px solid #10233f;"{% endif %}>
+    <p>
+        {{ n.get_verb_display }}
+        {% if n.message %}: {{ n.message }}{% endif %}
+    </p>
+
+    <p>
+        <small>{{ n.created_at|date:"d/m/Y H:i" }}</small>
+    </p>
+
+{% if n.content_object %}
+    <p style="margin: 8px 0;">
+        <a href="{% url 'notifications:click' n.pk %}"
+           style="font-weight: 600; color: #10233f; text-decoration: none;">
+            {% if n.content_object.title %}
+                {{ n.content_object.title }}
+            {% else %}
+                Xem nội dung thông báo
+            {% endif %}
+        </a>
+    </p>
+{% endif %}
+
     {% if not n.is_read %}
         <form method="post" action="{% url 'notifications:mark_read' n.pk %}">
             {% csrf_token %}
-            <button class="btn btn-secondary" type="submit">Đánh dấu đã đọc</button>
+            <button class="btn btn-secondary" type="submit">
+                Đánh dấu đã đọc
+            </button>
         </form>
     {% endif %}
 </div>
 {% empty %}
-<p>Không có thông báo nào.</p>
+<div class="card">
+    <p>Không có thông báo nào.</p>
+</div>
 {% endfor %}
+
 {% endblock %}
