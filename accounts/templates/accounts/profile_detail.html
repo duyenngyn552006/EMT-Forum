@@ -1,60 +1,501 @@
 {% extends "base.html" %}
-{% block title %}{{ display_name }} - Hồ sơ{% endblock %}
+{% load static %}
+{% block title %}{{ display_name }} - Hồ sơ - EMT Forum{% endblock %}
+{% block breadcrumb %}
+<nav class="breadcrumb-nav" aria-label="Đường dẫn">
+    <a href="{% url 'home' %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Trang chủ</span>
+    </a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-current">{{ display_name }}</span>
+</nav>
+{% endblock %}
 {% block content %}
-<div class="cover-header">
-    <div class="cover-banner" {% if profile_user.cover_image %}style="background-image: url('{{ profile_user.cover_image.url }}');"{% endif %}></div>
-    <div class="cover-avatar">
-        {% if profile_user.avatar %}
-            <img src="{{ profile_user.avatar.url }}" alt="{{ display_name }}">
-        {% else %}
-            {{ display_name|first|upper }}
-        {% endif %}
-    </div>
-</div>
-<div class="card">
-    <h1>{{ display_name }} {% if user.is_authenticated and user.role == "staff" %}<span class="pill">{{ profile_user.get_role_display }}</span>{% endif %}</h1>
-    {% if profile_user.bio %}<p>{{ profile_user.bio }}</p>{% endif %}
-    {% if user == profile_user %}<p>Email: {{ profile_user.email }}</p>{% endif %}
-    {% if profile_user.student_id %}<p>MSSV/CB: {{ profile_user.student_id }}</p>{% endif %}
-    {% if profile_user.class_name %}<p>Lớp: {{ profile_user.class_name }}</p>{% endif %}
-    <p>Tham gia: {{ profile_user.date_joined|date:"d/m/Y" }}</p>
-    {% if user == profile_user %}
-        <a class="btn" href="{% url 'accounts:profile_edit' %}">Chỉnh sửa hồ sơ</a>
-        <a class="btn btn-secondary" href="{% url 'interactions:saved' %}">Bài viết đã lưu</a>
-        <a class="btn btn-secondary" href="{% url 'interactions:following' %}">Đang theo dõi</a>
-    {% endif %}
-</div>
+<div class="profile-container" style="max-width: 1060px; margin: 0 auto;">
+    {# Profile Hero Card #}
+    <div class="profile-card-hero">
+        <div class="profile-cover-banner" {% if profile_user.cover_image %}style="background-image: url('{{ profile_user.cover_image.url }}');"{% endif %}></div>
+        <div class="profile-hero-content">
+            <div class="profile-avatar-row">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar-large">
+                        {% if profile_user.avatar %}
+                            <img id="profileMainAvatar" src="{{ profile_user.avatar.url }}" alt="{{ display_name }}">
+                        {% else %}
+                            <span>{{ display_name|first|upper }}</span>
+                        {% endif %}
 
-<div class="card">
-    <h2>Thống kê hồ sơ</h2>
-    <div class="list-meta" style="font-size:14px;gap:4px 18px;">
-        <span>📝 {{ stats.forum_post_count }} bài viết diễn đàn</span>
-        <span>👥 {{ stats.group_post_count }} bài viết trong nhóm</span>
-        <span>💬 {{ stats.comment_count }} bình luận</span>
-        <span>🏷️ {{ stats.group_count }} nhóm đang tham gia</span>
-        {% if user == profile_user %}
-            <span><a class="author-link" href="{% url 'interactions:following' %}">🔔 Đã theo dõi: {{ stats.followed_post_count }} bài viết, {{ stats.followed_category_count }} chuyên mục</a></span>
-        {% endif %}
-    </div>
-</div>
+                        {% if user == profile_user %}
+                            <button type="button" class="avatar-edit-overlay" onclick="openAvatarModal()" title="Cập nhật ảnh đại diện" aria-label="Cập nhật ảnh đại diện">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                <span>Đổi ảnh</span>
+                            </button>
+                        {% endif %}
+                    </div>
+                    {% if user == profile_user %}
+                        <button type="button" class="avatar-edit-badge" onclick="openAvatarModal()" title="Cập nhật ảnh đại diện" aria-label="Cập nhật ảnh đại diện">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        </button>
+                    {% endif %}
+                </div>
 
-<div class="card">
-    <h2>Lịch sử hoạt động</h2>
-</div>
-{% for a in page_obj %}
-    <div class="list-card">
-        <div class="list-body">
-            <div class="list-meta">
-                <span class="badge">{{ a.type_label }}</span>
-                <span>· {{ a.created_at|date:"d/m/Y H:i" }}</span>
+                {% if user == profile_user %}
+                    <div class="profile-actions-bar">
+                        <button type="button" class="profile-btn profile-btn-outline" onclick="openAvatarModal()" style="font-size:13.5px; font-weight:600;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            <span>Đổi ảnh đại diện</span>
+                        </button>
+                        <a class="profile-btn profile-btn-primary" href="{% url 'accounts:profile_edit' %}" style="font-size:13.5px; font-weight:600;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                            <span>Chỉnh sửa hồ sơ</span>
+                        </a>
+                    </div>
+                {% endif %}
             </div>
-            <h3 class="list-title"><a href="{{ a.url }}">{{ a.title }}</a></h3>
+
+            <div class="profile-title-header">
+                <h1>
+                    {{ display_name }}
+                    {% if user.is_authenticated and user.role == "staff" %}
+                        <span class="pill" style="font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px;">{{ profile_user.get_role_display }}</span>
+                    {% endif %}
+                </h1>
+                {% if profile_user.bio %}
+                    <div class="profile-bio-box">{{ profile_user.bio }}</div>
+                {% endif %}
+            </div>
+
+            {# Quick meta chips #}
+            <div class="profile-meta-chips">
+                <span class="profile-meta-chip" style="background:#fff7ed; border-color:#fed7aa; color:#ea580c; font-weight:700;">
+                    ★ {{ activity_score|default:0 }} điểm hoạt động
+                </span>
+                {% if user == profile_user or user.role == "staff" %}
+                    <span class="profile-meta-chip">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-primary);"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                        <span>Email: {{ profile_user.email }}</span>
+                    </span>
+                {% endif %}
+                {% if profile_user.student_id and user.is_authenticated %}
+                    <span class="profile-meta-chip">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-primary);"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <span>MSSV: {{ profile_user.student_id }}</span>
+                    </span>
+                {% endif %}
+                {% if profile_user.class_name %}
+                    <span class="profile-meta-chip">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-primary);"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                        <span>Lớp: {{ profile_user.class_name }}</span>
+                    </span>
+                {% endif %}
+                <span class="profile-meta-chip">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-primary);"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    <span>Tham gia: {{ profile_user.date_joined|date:"d/m/Y" }}</span>
+                </span>
+            </div>
+
+            {# Badges #}
+            {% if badges %}
+                <div class="profile-badges-wrap" style="display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px dashed var(--color-border);">
+                    <span style="font-size:12.5px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px;">HUY HIỆU:</span>
+                    {% for b in badges %}
+                        <span class="user-badge-pill" title="{{ b.desc }}" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; padding:5px 12px; border-radius:14px; background:var(--color-surface-muted); border:1px solid var(--color-border); color:var(--color-heading);">
+                            <span>{{ b.icon }}</span>
+                            <span>{{ b.name }}</span>
+                        </span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
-{% empty %}
-    <div class="card">
-        <p>Chưa có hoạt động nào.</p>
+
+    {# Stats Section #}
+    <div class="profile-stats-section" style="margin-top:18px;">
+        <div class="section-title-wrap" style="margin-bottom:14px;">
+            <span class="section-icon-badge sec-announcements">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </span>
+            <h2 style="font-size:18px; font-weight:800; margin:0;">Thống kê hồ sơ</h2>
+        </div>
+
+        <div class="profile-stats-grid">
+            <div class="profile-stat-box">
+                <div class="profile-stat-icon psi-forum">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div class="profile-stat-content" style="display:flex; flex-direction:column;">
+                    <div class="profile-stat-val">{{ stats.forum_post_count }}</div>
+                    <div class="profile-stat-lbl">bài viết diễn đàn</div>
+                </div>
+            </div>
+
+            <div class="profile-stat-box">
+                <div class="profile-stat-icon psi-group">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div class="profile-stat-content" style="display:flex; flex-direction:column;">
+                    <div class="profile-stat-val">{{ stats.group_post_count }}</div>
+                    <div class="profile-stat-lbl">bài viết trong nhóm</div>
+                </div>
+            </div>
+
+            <div class="profile-stat-box">
+                <div class="profile-stat-icon psi-comment">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                </div>
+                <div class="profile-stat-content" style="display:flex; flex-direction:column;">
+                    <div class="profile-stat-val">{{ stats.comment_count }}</div>
+                    <div class="profile-stat-lbl">bình luận</div>
+                </div>
+            </div>
+
+            <div class="profile-stat-box">
+                <div class="profile-stat-icon psi-memberships">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div class="profile-stat-content" style="display:flex; flex-direction:column;">
+                    <div class="profile-stat-val">{{ stats.group_count }}</div>
+                    <div class="profile-stat-lbl">nhóm đang tham gia</div>
+                </div>
+            </div>
+        </div>
     </div>
-{% endfor %}
-{% include "_pagination.html" with noun="hoạt động" %}
+
+    {# Activity & Specialized Content Tabs #}
+    <div class="profile-activity-section" style="margin-top:18px;">
+        <div class="section-heading" style="margin-bottom:14px;">
+            <div class="section-title-wrap">
+                <span class="section-icon-badge sec-forum">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </span>
+                <h2>Nội dung &amp; Hoạt động</h2>
+            </div>
+        </div>
+
+        {# Specialized Tab Navigation #}
+        <div class="profile-tabs-nav" role="tablist">
+            <button type="button" class="profile-tab-btn active" data-tab="posts" onclick="switchProfileTab('posts', this)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>Bài viết ({{ user_posts|length }})</span>
+            </button>
+            <button type="button" class="profile-tab-btn" data-tab="comments" onclick="switchProfileTab('comments', this)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                <span>Bình luận ({{ user_comments|length }})</span>
+            </button>
+            {% if user == profile_user %}
+                <button type="button" class="profile-tab-btn" data-tab="saved" onclick="switchProfileTab('saved', this)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                    <span>Đã lưu ({{ saved_items|length }})</span>
+                </button>
+                <button type="button" class="profile-tab-btn" data-tab="following" onclick="switchProfileTab('following', this)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                    <span>Đang theo dõi ({{ followed_items|length }})</span>
+                </button>
+            {% endif %}
+            <button type="button" class="profile-tab-btn" data-tab="timeline" onclick="switchProfileTab('timeline', this)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Dòng thời gian</span>
+            </button>
+        </div>
+
+        {# Tab 1: Bài viết đã đăng #}
+        <div id="tab-panel-posts" class="profile-tab-panel active">
+            {% if user_posts %}
+                <div class="activity-feed-list">
+                    {% for p in user_posts %}
+                        <div class="activity-feed-card" style="display:flex; align-items:flex-start; gap:14px;">
+                            <div class="activity-icon-bullet">
+                                {% if p.type == "forum" %}
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                {% else %}
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                                {% endif %}
+                            </div>
+                            <div class="activity-body list-body">
+                                <div class="activity-meta list-meta">
+                                    <span class="badge">{% if p.type == "forum" %}Diễn đàn · {{ p.category_or_group }}{% else %}Nhóm · {{ p.category_or_group }}{% endif %}</span>
+                                    <span>· {{ p.created_at|date:"d/m/Y H:i" }}</span>
+                                    <span>· {{ p.view_count }} lượt xem</span>
+                                </div>
+                                <h3 class="activity-title list-title"><a href="{{ p.url }}">{{ p.title }}</a></h3>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card" style="text-align:center; padding:32px 20px; color:var(--color-text-muted);">
+                    <p style="margin:0; font-size:14.5px;">Chưa có bài viết nào được đăng.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        {# Tab 2: Bình luận & Phản hồi #}
+        <div id="tab-panel-comments" class="profile-tab-panel">
+            {% if user_comments %}
+                <div class="activity-feed-list">
+                    {% for c in user_comments %}
+                        <div class="activity-feed-card" style="display:flex; align-items:flex-start; gap:14px;">
+                            <div class="activity-icon-bullet">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                            </div>
+                            <div class="activity-body list-body">
+                                <div class="activity-meta list-meta">
+                                    <span class="badge">Bình luận</span>
+                                    <span>· {{ c.created_at|date:"d/m/Y H:i" }}</span>
+                                    <span>· Trong bài: <a class="author-link" href="{{ c.url }}">{{ c.title }}</a></span>
+                                </div>
+                                <div style="font-size:13.5px; color:var(--color-text); line-height:1.5; margin-top:4px; padding:8px 12px; background:var(--color-surface-muted); border-radius:6px; border-left:3px solid var(--color-primary);">
+                                    “{{ c.body|truncatewords:30 }}”
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card" style="text-align:center; padding:32px 20px; color:var(--color-text-muted);">
+                    <p style="margin:0; font-size:14.5px;">Chưa có bình luận nào.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if user == profile_user %}
+            {# Tab 3: Bài viết đã lưu #}
+            <div id="tab-panel-saved" class="profile-tab-panel">
+                {% if saved_items %}
+                    <div class="activity-feed-list">
+                        {% for s in saved_items %}
+                            <div class="activity-feed-card" style="display:flex; justify-content:space-between; align-items:center; gap:16px;">
+                                <div style="display:flex; align-items:flex-start; gap:14px; flex:1; min-width:0;">
+                                    <div class="activity-icon-bullet">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                                    </div>
+                                    <div class="activity-body list-body">
+                                        <div class="activity-meta list-meta">
+                                            <span class="badge">Đã lưu</span>
+                                            <span>· Đã lưu lúc {{ s.saved_at|date:"d/m/Y H:i" }}</span>
+                                        </div>
+                                        <h3 class="activity-title list-title"><a href="{{ s.url }}">{{ s.label }}</a></h3>
+                                    </div>
+                                </div>
+                                <form method="post" action="{% url 'interactions:toggle_save' s.model_key s.object_id %}" style="flex-shrink:0;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.path }}#saved">
+                                    <button class="btn btn-sm btn-secondary" type="submit" style="padding:6px 14px; font-size:12.5px;">Bỏ lưu</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top:14px; text-align:right;">
+                        <a href="{% url 'interactions:saved' %}" class="more-link" style="font-size:13px; font-weight:600;">Xem toàn bộ trang quản lý bài viết đã lưu &rarr;</a>
+                    </div>
+                {% else %}
+                    <div class="card" style="text-align:center; padding:32px 20px; color:var(--color-text-muted);">
+                        <p style="margin:0 0 8px; font-size:14.5px;">Bạn chưa lưu bài viết nào. Hãy bấm biểu tượng “Lưu” trên các bài viết hay để xem lại tại đây.</p>
+                        <a href="{% url 'interactions:saved' %}" class="more-link" style="font-size:13px; font-weight:600;">Xem trang quản lý bài viết đã lưu &rarr;</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Tab 4: Mục đang theo dõi #}
+            <div id="tab-panel-following" class="profile-tab-panel">
+                {% if followed_items %}
+                    <div class="activity-feed-list">
+                        {% for f in followed_items %}
+                            <div class="activity-feed-card" style="display:flex; justify-content:space-between; align-items:center; gap:16px;">
+                                <div style="display:flex; align-items:flex-start; gap:14px; flex:1; min-width:0;">
+                                    <div class="activity-icon-bullet">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                                    </div>
+                                    <div class="activity-body list-body">
+                                        <div class="activity-meta list-meta">
+                                            <span class="badge">{% if f.kind == "category" %}Chuyên mục diễn đàn{% else %}Bài viết{% endif %}</span>
+                                            <span>· Theo dõi từ {{ f.followed_at|date:"d/m/Y H:i" }}</span>
+                                        </div>
+                                        <h3 class="activity-title list-title"><a href="{{ f.url }}">{{ f.label }}</a></h3>
+                                    </div>
+                                </div>
+                                <form method="post" action="{% url 'interactions:toggle_follow' f.model_key f.object_id %}" style="flex-shrink:0;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.path }}#following">
+                                    <button class="btn btn-sm btn-secondary" type="submit" style="padding:6px 14px; font-size:12.5px;">Bỏ theo dõi</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top:14px; text-align:right;">
+                        <a href="{% url 'interactions:following' %}" class="more-link" style="font-size:13px; font-weight:600;">Xem toàn bộ trang quản lý theo dõi &rarr;</a>
+                    </div>
+                {% else %}
+                    <div class="card" style="text-align:center; padding:32px 20px; color:var(--color-text-muted);">
+                        <p style="margin:0 0 8px; font-size:14.5px;">Bạn chưa theo dõi chuyên mục hay bài viết nào.</p>
+                        <a href="{% url 'interactions:following' %}" class="more-link" style="font-size:13px; font-weight:600;">Xem trang quản lý theo dõi &rarr;</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# Tab 5: Dòng thời gian #}
+        <div id="tab-panel-timeline" class="profile-tab-panel">
+            {% if page_obj %}
+                <div class="activity-feed-list">
+                    {% for a in page_obj %}
+                        <div class="activity-feed-card" style="display:flex; align-items:flex-start; gap:14px;">
+                            <div class="activity-icon-bullet">
+                                {% if "diễn đàn" in a.type_label %}
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                {% elif "nhóm" in a.type_label %}
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                                {% else %}
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                                {% endif %}
+                            </div>
+                            <div class="activity-body list-body">
+                                <div class="activity-meta list-meta">
+                                    <span class="badge">{{ a.type_label }}</span>
+                                    <span>· {{ a.created_at|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <h3 class="activity-title list-title"><a href="{{ a.url }}">{{ a.title }}</a></h3>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% include "_pagination.html" with noun="hoạt động" %}
+            {% else %}
+                <div class="card" style="text-align:center; padding:32px 20px; color:var(--color-text-muted);">
+                    <p style="margin:0; font-size:14.5px;">Chưa có hoạt động nào.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if user == profile_user %}
+{# Direct Avatar Update Modal with Live Preview #}
+<div id="avatarModalOverlay" class="avatar-modal-backdrop" style="display:none;" onclick="if(event.target===this) closeAvatarModal();">
+    <div class="avatar-modal-dialog">
+        <div class="avatar-modal-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-primary);"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <h3 style="margin:0; font-size:18px; font-weight:800; color:var(--color-heading);">Cập nhật ảnh đại diện</h3>
+            </div>
+            <button type="button" class="avatar-modal-close" onclick="closeAvatarModal()" aria-label="Đóng">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'accounts:update_avatar' %}" enctype="multipart/form-data" id="directAvatarForm">
+            {% csrf_token %}
+            <div class="avatar-modal-body">
+                <div class="avatar-preview-area">
+                    <div class="avatar-preview-circle" id="avatarPreviewCircle">
+                        {% if profile_user.avatar %}
+                            <img id="avatarModalPreviewImg" src="{{ profile_user.avatar.url }}" alt="Xem trước ảnh" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                        {% else %}
+                            <div id="avatarModalPlaceholder" class="avatar-preview-placeholder">
+                                {{ display_name|first|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div style="text-align:center;">
+                        <input type="file" id="directAvatarInput" name="avatar" accept="image/*" style="display:none;" onchange="handleAvatarFileSelect(this)">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('directAvatarInput').click()" style="display:inline-flex; align-items:center; gap:6px;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                            <span>Chọn ảnh mới từ thiết bị</span>
+                        </button>
+                        <div id="avatarFileNameDisplay" style="font-size:12.5px; color:var(--color-text-muted); margin-top:6px; min-height:18px;">
+                            Chấp nhận định dạng JPG, PNG, WEBP (Tối đa 5MB)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="avatar-modal-footer">
+                {% if profile_user.avatar %}
+                    <button type="submit" name="action" value="delete" class="btn btn-danger-soft btn-sm" onclick="return confirm('Bạn có chắc chắn muốn gỡ ảnh đại diện hiện tại?');" style="margin-right:auto;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <span>Gỡ ảnh đại diện</span>
+                    </button>
+                {% endif %}
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeAvatarModal()">Hủy</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="btnSaveAvatar" style="font-weight:700;">Lưu ảnh đại diện</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function switchProfileTab(tabName, btnElement) {
+        var panels = document.querySelectorAll('.profile-tab-panel');
+        panels.forEach(function(panel) {
+            panel.classList.remove('active');
+        });
+        var buttons = document.querySelectorAll('.profile-tab-btn');
+        buttons.forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+
+        var targetPanel = document.getElementById('tab-panel-' + tabName);
+        if (targetPanel) {
+            targetPanel.classList.add('active');
+        }
+        if (btnElement) {
+            btnElement.classList.add('active');
+        } else {
+            var matchingBtn = document.querySelector('.profile-tab-btn[data-tab="' + tabName + '"]');
+            if (matchingBtn) matchingBtn.classList.add('active');
+        }
+
+        if (history.replaceState) {
+            history.replaceState(null, null, '#' + tabName);
+        }
+    }
+
+    function openAvatarModal() {
+        var modal = document.getElementById('avatarModalOverlay');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeAvatarModal() {
+        var modal = document.getElementById('avatarModalOverlay');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    function handleAvatarFileSelect(input) {
+        if (input.files && input.files[0]) {
+            var file = input.files[0];
+            if (!file.type || !file.type.startsWith('image/')) {
+                alert('Vui lòng chọn tệp định dạng hình ảnh hợp lệ (PNG, JPG, WEBP).');
+                input.value = '';
+                return;
+            }
+            var objectUrl = URL.createObjectURL(file);
+            var previewCircle = document.getElementById('avatarPreviewCircle');
+            if (previewCircle) {
+                previewCircle.innerHTML = '<img id="avatarModalPreviewImg" src="' + objectUrl + '" alt="Xem trước" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
+            }
+            var nameDisplay = document.getElementById('avatarFileNameDisplay');
+            if (nameDisplay) {
+                var sizeKb = Math.round(file.size / 1024);
+                var sizeText = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : sizeKb + ' KB';
+                nameDisplay.innerHTML = '<strong style="color:var(--color-primary);">Đã chọn:</strong> ' + file.name + ' (' + sizeText + ')';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var hash = window.location.hash.replace('#', '');
+        if (hash) {
+            var validTabs = ['posts', 'comments', 'saved', 'following', 'timeline'];
+            if (validTabs.indexOf(hash) !== -1) {
+                switchProfileTab(hash);
+            }
+        }
+    });
+</script>
 {% endblock %}

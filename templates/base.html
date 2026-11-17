@@ -19,17 +19,15 @@
     <title>{% block title %}EMT Forum{% endblock %}</title>
     <style>
         /* Footer luôn ở đáy màn hình kể cả trang ít nội dung: body xếp cột, main giãn chiếm phần còn trống */
-        body { font-family: system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; }
+        html { overflow-x: clip; width: 100%; max-width: 100%; }
+        body { font-family: system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; overflow-x: clip; width: 100%; max-width: 100%; }
         body > header, body > .site-footer { flex-shrink: 0; }
-        header { background: #10233f; color: #fff; padding: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        header a { color: #fff; text-decoration: none; margin-right: 14px; }
-        header nav a { font-size: 14px; }
-        .header-left { display: flex; align-items: center; flex-wrap: wrap; }
-        /* margin-left:auto de luon dinh sang phai, ke ca khi header-right bi flex-wrap
-           xuong dong rieng (luc do chi con 1 phan tu nen justify-content:space-between
-           cua header cha khong con tac dung day sang phai nua). */
-        .header-right { display: flex; align-items: center; flex-wrap: wrap; margin-left: auto; }
-        main { flex: 1 0 auto; width: 100%; box-sizing: border-box; max-width: 1320px; margin: 24px auto; padding: 0 clamp(16px, 3vw, 40px); }
+        header.site-header { position: sticky; top: 0; z-index: 500; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); color: #10233f; padding: 0; border-bottom: 1px solid #e5e7eb; box-sizing: border-box; }
+        header a { color: #10233f; text-decoration: none; }
+        header nav a { font-size: 15px; }
+        .header-left { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; min-width: 0; }
+        .header-right { display: flex; align-items: center; flex-wrap: nowrap; gap: 7px; margin-left: auto; flex-shrink: 0; }
+        main { flex: 1 0 auto; width: 100%; box-sizing: border-box; max-width: 1280px; margin: 20px auto 40px; padding: 0 clamp(12px, 2vw, 24px); overflow-x: clip; }
 
         .site-footer { background: #10233f; color: #d7deeb; margin-top: 24px; }
         .site-footer-inner { max-width: 1320px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 40px); display: flex; flex-wrap: wrap; gap: 32px; justify-content: space-between; }
@@ -270,28 +268,97 @@
         .post-menu-dropdown a:hover, .post-menu-dropdown button:hover { background: #f5f6f8; }
         .post-menu-dropdown .danger-text { color: #b91c1c !important; }
 
-        /* Khung binh luan */
-        .comment-composer { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 20px; }
-        .comment-composer textarea { flex: 1; max-width: none; margin-bottom: 8px; }
-        .comment-composer-actions { display: flex; justify-content: flex-end; }
-        .comment-list { display: flex; flex-direction: column; gap: 4px; }
-        .comment-item { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid #f1f2f4; }
+        /* Khung binh luan nhieu tang (Threaded Tree Comments) */
+        .comment-composer { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 22px; }
+        .comment-composer textarea { flex: 1; max-width: none; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--color-border); padding: 12px 14px; font-size: 14px; background: var(--color-surface); color: var(--color-text); }
+        .comment-composer-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .comment-list { display: flex; flex-direction: column; gap: 10px; }
+        .comment-item { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid rgba(226, 232, 240, 0.6); position: relative; }
         .comment-item:first-child { border-top: none; }
-        .comment-bubble { flex: 1; background: #f5f6f8; border-radius: 12px; padding: 10px 14px; }
-        .comment-author { font-weight: 600; font-size: 13.5px; }
-        .comment-time { font-size: 11.5px; color: #6b7280; margin-left: 6px; font-weight: 400; }
-        .comment-body { font-size: 14px; margin: 4px 0 0; color: #1f2937; }
+        .comment-bubble { flex: 1; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 14px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); transition: border-color 0.2s ease; }
+        .comment-bubble:hover { border-color: rgba(12, 59, 122, 0.25); }
+        .comment-author { font-weight: 700; font-size: 14px; }
+        .comment-author a { color: var(--color-text); text-decoration: none; }
+        .comment-author a:hover { color: var(--color-primary); }
+        .comment-time { font-size: 12px; color: var(--color-text-muted); margin-left: 8px; font-weight: 400; }
+        .comment-body { font-size: 14px; margin: 6px 0 0; color: var(--color-text); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
         .comment-main { flex: 1; min-width: 0; }
-        .reply-toggle-btn { background: none; border: none; color: #6b7280; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 4px 2px; }
-        .reply-toggle-btn:hover { color: #10233f; text-decoration: underline; }
-        .reply-toggle-btn.danger-text { color: #b91c1c; }
-        .reply-toggle-btn.danger-text:hover { color: #7f1414; }
-        .comment-actions-row { display: flex; gap: 14px; margin-top: 2px; }
-        .reply-list { margin-left: 28px; }
-        .reply-list .comment-item { padding: 8px 0; }
-        .reply-form { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0 4px 28px; }
+        .comment-actions-row { display: flex; align-items: center; gap: 16px; margin-top: 6px; padding-left: 4px; }
+        .reply-toggle-btn { background: none; border: none; color: var(--color-text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 3px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s ease; }
+        .reply-toggle-btn:hover { color: var(--color-primary); background: rgba(12, 59, 122, 0.06); }
+        .reply-toggle-btn.danger-text { color: #ef4444; }
+        .reply-toggle-btn.danger-text:hover { color: #dc2626; background: rgba(239, 68, 68, 0.08); }
+
+        /* Cây phân cấp bình luận (Threaded Tree) */
+        .reply-list {
+            margin-left: 36px;
+            padding-left: 18px;
+            border-left: 2px solid #e2e8f0;
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        html[data-theme="dark"] .reply-list { border-left-color: #334155; }
+        .reply-list .comment-item {
+            padding: 8px 0;
+            border-top: none;
+        }
+        .reply-list .comment-item::before {
+            content: "";
+            position: absolute;
+            left: -18px;
+            top: 22px;
+            width: 14px;
+            height: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            border-left: 2px solid #e2e8f0;
+            border-bottom-left-radius: 8px;
+        }
+        html[data-theme="dark"] .reply-list .comment-item::before {
+            border-color: #334155;
+        }
+        .reply-list .comment-bubble {
+            background: #f8fafc;
+            border: 1px solid #edf2f7;
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+        html[data-theme="dark"] .reply-list .comment-bubble {
+            background: #141c2e;
+            border-color: #1e293b;
+        }
+        .reply-list .list-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 13px;
+        }
+        .reply-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin: 10px 0 6px 36px;
+            padding-left: 18px;
+            border-left: 2px solid #e2e8f0;
+        }
+        html[data-theme="dark"] .reply-form { border-left-color: #334155; }
         .reply-form[hidden] { display: none; }
-        .reply-form textarea { flex: 1; max-width: none; margin-bottom: 6px; }
+        .reply-form textarea {
+            flex: 1;
+            max-width: none;
+            margin-bottom: 6px;
+            border-radius: 10px;
+            border: 1px solid var(--color-border);
+            padding: 10px 12px;
+            font-size: 13.5px;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+        .reply-form .list-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 13px;
+        }
         table { width: 100%; border-collapse: collapse; }
         table th, table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
         table th { background: #f8fafc; color: #475569; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid #dbe3ee; }
@@ -310,7 +377,7 @@
         .code-copy:hover { background: #334155; color: #fff; }
         .rich-content blockquote { border-left: 3px solid #cbd5e1; margin: 8px 0; padding: 4px 12px; color: #475569; }
         .rich-content a { color: #10233f; }
-        .brand-logo { height: 90px; display: block; margin-right: 20px; }
+        .brand-logo { height: 68px; display: block; margin-right: 18px; object-fit: contain; }
 
         .notif-bell-wrapper { position: relative; display: inline-block; margin-right: 14px; }
         .bell-btn { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 4px 6px; position: relative; }
@@ -338,9 +405,11 @@
         .notif-viewall:hover { background: #f5f6f8; }
 
         /* Nav dang chu - chi hien tren laptop/PC (an tren dien thoai) */
-        .desktop-nav { display: flex; align-items: center; flex-wrap: wrap; }
-        .admin-menu-wrapper { position: relative; display: inline-block; }
-        .admin-menu-btn { background: none; border: none; color: #fff; font-size: 14px; cursor: pointer; padding: 6px 4px; font-family: inherit; }
+        .desktop-nav { display: flex; align-items: center; flex-wrap: nowrap !important; gap: 4px; flex-shrink: 0; }
+        .desktop-nav a { white-space: nowrap !important; }
+        .admin-menu-wrapper { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
+        .admin-menu-btn { background: none; border: none; color: #fff; font-size: 15px; cursor: pointer; padding: 6px 4px; font-family: inherit; white-space: nowrap !important; }
+        .header-center { display: none; }
         .admin-dropdown { position: absolute; left: 0; top: 30px; min-width: 200px; max-width: 90vw; background: #fff; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); z-index: 100; padding: 6px 0; }
         .admin-dropdown[hidden] { display: none; }
         .admin-dropdown a { display: block; color: #1a1a1a !important; padding: 8px 16px; font-size: 14px; margin-right: 0 !important; }
@@ -380,33 +449,18 @@
 
         /* Gop ten + vai tro thanh 1 khoi gon, bam vao hien dropdown dang xuat */
         .user-menu-wrapper { position: relative; }
-        .user-menu-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; background: none; border: none; color: #fff; cursor: pointer; font-family: inherit; padding: 4px 8px; line-height: 1.3; margin-right: 6px; }
-        .user-menu-btn .user-name { font-size: 13px; }
+        .user-menu-btn { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; padding: 3px 12px 3px 4px; cursor: pointer; font-family: inherit; line-height: 1.3; margin: 0; height: 40px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05); }
         .user-dropdown { position: absolute; right: 0; top: 40px; min-width: 180px; background: #fff; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); z-index: 100; padding: 6px 0; }
         .user-dropdown[hidden] { display: none; }
         .user-dropdown a { display: block; color: #1a1a1a !important; padding: 8px 16px; font-size: 14px; margin-right: 0 !important; }
         .user-dropdown a:hover { background: #f5f6f8; }
 
-        /* Responsive - man hinh nho (dien thoai): doi nav chu -> icon luoi + panel.
-           Khoi ten/vai tro gop dropdown dang xuat thi dung chung cho ca PC lan dien thoai. */
+        /* Responsive: bố cục header nằm trong static/css/design-system.css */
         @media (max-width: 640px) {
-            header { padding: 0; }
             main { padding: 0 12px; margin: 16px auto; }
             .card { padding: 12px; }
-            .brand-logo { height: 90px; margin-right: 10px; }
-            /* position:absolute neo theo nut chuong se tran man hinh neu nut chuong khong
-               nam sat le trai - doi sang fixed, neo theo vien man hinh (viewport) de luon
-               vua khung du nut chuong o dau trong header. */
-            .notif-dropdown { position: fixed; top: 54px; left: 12px; right: 12px; width: auto; max-width: none; }
+            .notif-dropdown { position: fixed; top: 60px; left: 12px; right: 12px; width: auto; max-width: none; }
             .auth-modal-card { padding: 24px 18px; }
-
-            .desktop-nav { display: none; }
-            .header-search-bar { display: none; }
-            .grid-menu-btn { display: grid; }
-            /* Nut luoi gio nam trong .header-right (dau tien). Ep header-right chiem
-               tron 1 dong rieng (flex-basis:100%) va dung space-between de nut luoi
-               ghim sat trai, cum theme/chuong/ten ghim sat phai tren CUNG 1 dong do. */
-            .header-right { flex-basis: 100%; justify-content: space-between; margin-left: 0; }
         }
 
         /* ================= CHẾ ĐỘ TỐI =================
@@ -424,6 +478,14 @@
             --ck-color-focus-border: #60a5fa; --ck-color-shadow-inner: transparent; --ck-color-word-count-text: #9aa6b8; }
         html[data-theme="dark"] body { background: #0b1220; color: #e5e9f0; }
         html[data-theme="dark"] header { background: #0d1a30; border-bottom: 1px solid #1c2a44; }
+        html[data-theme="dark"] header a { color: #fff; }
+        html[data-theme="dark"] header .header-left > a:first-child { background: #fff; border-radius: 6px; padding: 4px 8px; }
+        html:not([data-theme="dark"]) header .bell-btn,
+        html:not([data-theme="dark"]) header .admin-menu-btn,
+        html:not([data-theme="dark"]) header .user-menu-btn { color: #10233f; }
+        html:not([data-theme="dark"]) header .grid-menu-btn .dot { background: #10233f; }
+        html:not([data-theme="dark"]) header .theme-toggle { color: #10233f; border-color: rgba(16, 35, 63, 0.25); }
+        html:not([data-theme="dark"]) header .theme-toggle:hover { background: rgba(16, 35, 63, 0.08); }
         html[data-theme="dark"] .site-footer { background: #0d1a30; border-top: 1px solid #1c2a44; }
         html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3, html[data-theme="dark"] h4 { color: #f1f5fb; }
         html[data-theme="dark"] main :where(a, a:visited) { color: #7cb3ff; }
@@ -432,7 +494,7 @@
         /* Bề mặt: thẻ, khung, hộp thả xuống, hộp thoại */
         html[data-theme="dark"] .card, html[data-theme="dark"] .list-card, html[data-theme="dark"] .stat-tile,
         html[data-theme="dark"] .confirm-modal-card, html[data-theme="dark"] .auth-modal-card,
-        html[data-theme="dark"] .notif-dropdown, html[data-theme="dark"] .admin-dropdown, html[data-theme="dark"] .user-dropdown,
+        html[data-theme="dark"] .notif-dropdown, html[data-theme="dark"] .admin-dropdown, html[data-theme="dark"] .user-dropdown, html[data-theme="dark"] .nav-dropdown-panel,
         html[data-theme="dark"] .post-menu-dropdown, html[data-theme="dark"] .search-suggest-box, html[data-theme="dark"] .mention-suggest-box,
         html[data-theme="dark"] .nav-panel, html[data-theme="dark"] .reaction-picker, html[data-theme="dark"] .doc-card {
             background: #111a2b; color: #e5e9f0; border-color: #26334d; }
@@ -555,21 +617,102 @@
             html.theme-transition, html.theme-transition * { transition: background-color 0.25s, border-color 0.25s, color 0.25s !important; }
         }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     {% block extra_head %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=21">
 </head>
 <body>
-<header>
-    <div class="header-left">
-        <a href="{% url 'home' %}"><img src="{% static 'img/logo.png' %}" alt="EMT Forum" class="brand-logo"></a>
-        <nav class="desktop-nav">
-            <a href="{% url 'announcements:list' %}">Thông báo của Khoa</a>
-            <a href="{% url 'forum:post_list' %}">Diễn đàn</a>
-            <a href="{% url 'groups:list' %}">Nhóm</a>
-            {% if user.is_authenticated %}
-                {% if user.role == 'staff' %}
-                    <div class="admin-menu-wrapper">
-                        <button type="button" class="admin-menu-btn" onclick="toggleAdminMenu(event)">Quản trị ▾</button>
-                        <div class="admin-dropdown" id="adminDropdown" hidden>
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="header-left">
+            <button type="button" class="grid-menu-btn" onclick="toggleNavPanel(event)" aria-label="Mở menu">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </button>
+            <a href="{% url 'home' %}" class="brand-wrapper" title="EMT Forum - Khoa Thương mại điện tử - Marketing và Công nghệ số">
+                <img src="{% static 'img/logo.png' %}" alt="EMT Forum - Khoa Thương mại điện tử - Marketing và Công nghệ số" class="brand-logo">
+            </a>
+            <nav class="desktop-nav" aria-label="Điều hướng chính">
+                <div class="nav-dropdown-wrapper">
+                    <div class="nav-dropdown-trigger">
+                        <a href="{% url 'announcements:list' %}" class="nav-link-item{% if '/announcements/' in request.path %} active{% endif %}">
+                            <span>Thông báo</span>
+                            <button type="button" class="nav-chevron-btn" onclick="toggleNavMenu(event, 'announcementsDropdown')" aria-label="Mở rộng thông báo">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
+                        </a>
+                    </div>
+                    <div class="nav-dropdown-panel" id="announcementsDropdown" hidden>
+                        <a href="{% url 'announcements:list' %}?kind=official">
+                            <span>Thông tin học vụ</span>
+                        </a>
+                        <a href="{% url 'announcements:list' %}?kind=event">
+                            <span>Sự kiện & Phong trào</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nav-dropdown-wrapper">
+                    <div class="nav-dropdown-trigger">
+                        <a href="{% url 'forum:post_list' %}" class="nav-link-item{% if '/forum/' in request.path %} active{% endif %}">
+                            <span>Diễn đàn</span>
+                            <button type="button" class="nav-chevron-btn" onclick="toggleNavMenu(event, 'forumDropdown')" aria-label="Mở rộng diễn đàn">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
+                        </a>
+                    </div>
+                    <div class="nav-dropdown-panel" id="forumDropdown" hidden>
+                        {% for cat in nav_categories %}
+                            <a href="{% url 'forum:post_list_by_category' cat.slug %}">
+                                <span>{{ cat.name }}</span>
+                            </a>
+                        {% empty %}
+                            <a href="{% url 'forum:post_list' %}">
+                                <span>Thảo luận chung</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="nav-dropdown-wrapper">
+                    <div class="nav-dropdown-trigger">
+                        <a href="{% url 'groups:list' %}" class="nav-link-item{% if '/groups/' in request.path %} active{% endif %}">
+                            <span>Nhóm</span>
+                            <button type="button" class="nav-chevron-btn" onclick="toggleNavMenu(event, 'groupsDropdown')" aria-label="Mở rộng nhóm">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
+                        </a>
+                    </div>
+                    <div class="nav-dropdown-panel" id="groupsDropdown" hidden>
+                        <a href="{% url 'groups:list' %}?recruiting=1">
+                            <span>Nhóm đang tuyển thành viên</span>
+                        </a>
+                        {% if user.is_authenticated %}
+                            <a href="{{ user.get_absolute_url }}">
+                                <span>Nhóm tôi tham gia</span>
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="{% url 'groups:create' %}" class="dropdown-action-link">
+                                <span>Tạo nhóm mới</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if user.is_authenticated and user.role == 'staff' %}
+                    <div class="admin-menu-wrapper nav-dropdown-wrapper">
+                        <div class="nav-dropdown-trigger">
+                            <button type="button" class="admin-menu-btn nav-link-item" onclick="toggleAdminMenu(event)">
+                                <span>Quản trị</span>
+                                <span class="nav-chevron-btn">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="admin-dropdown nav-dropdown-panel" id="adminDropdown" hidden>
                             <a href="{% url 'dashboard:overview' %}">Dashboard</a>
                             <a href="{% url 'accounts:user_list' %}">Quản lý tài khoản</a>
                             <a href="{% url 'groups:pending_list' %}">Duyệt nhóm</a>
@@ -582,73 +725,96 @@
                         </div>
                     </div>
                 {% endif %}
+            </nav>
+        </div>
+
+        <div class="header-right">
+            <form method="get" action="{% url 'search:results' %}" class="header-search-bar" id="globalSearchForm" role="search">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input type="text" name="q" id="headerSearchInput" placeholder="Tìm kiếm..." autocomplete="off" data-suggest-url="{% url 'search:suggest' %}" aria-label="Tìm kiếm">
+                <span class="search-kbd" title="Phím tắt: Ctrl + K hoặc /">Ctrl K</span>
+            </form>
+            {% if header_recent_searches %}{{ header_recent_searches|json_script:"headerRecentSearchesData" }}{% endif %}
+
+            <a href="{% url 'search:results' %}" class="icon-btn search-icon-btn" aria-label="Tìm kiếm" title="Tìm kiếm">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            </a>
+
+            <button type="button" class="theme-toggle icon-btn" id="themeToggle" aria-label="Bật chế độ tối" aria-pressed="false" title="Chế độ sáng / tối">🌙</button>
+
+            {% if user.is_authenticated %}
+                <a href="{% url 'forum:post_create' %}" class="btn-quick-post" title="Tạo bài viết thảo luận mới">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Đăng bài</span>
+                </a>
+
+                <div class="notif-bell-wrapper">
+                    <button type="button" class="bell-btn icon-btn" onclick="toggleNotifDropdown(event)" aria-label="Thông báo">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                        {% if bell_unread_count > 0 %}
+                            <span class="bell-badge">{{ bell_unread_count }}</span>
+                        {% endif %}
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown" hidden>
+                        <div class="notif-dropdown-header">
+                            <strong>Thông báo</strong>
+                            <form method="post" action="{% url 'notifications:mark_all_read' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="notif-markall">Đánh dấu tất cả đã đọc</button>
+                            </form>
+                        </div>
+                        <div class="notif-tabs">
+                            <button type="button" class="notif-tab active" onclick="filterNotifTab(this, 'all')">Tất cả</button>
+                            <button type="button" class="notif-tab" onclick="filterNotifTab(this, 'unread')">Chưa đọc</button>
+                        </div>
+                        <div class="notif-list">
+                            {% for n in bell_notifications %}
+                                <a href="{% url 'notifications:click' n.pk %}" class="notif-item{% if not n.is_read %} unread{% endif %}" data-read="{{ n.is_read|yesno:'1,0' }}">
+                                    <span class="notif-body">
+                                        <span class="notif-text">{% if n.message %}{{ n.message }}{% else %}{{ n.get_verb_display }}{% endif %}</span>
+                                        <span class="notif-time">{{ n.created_at|timesince }} trước</span>
+                                    </span>
+                                    {% if not n.is_read %}<span class="notif-dot"></span>{% endif %}
+                                </a>
+                            {% empty %}
+                                <p class="notif-empty">Không có thông báo nào.</p>
+                            {% endfor %}
+                        </div>
+                        <a href="{% url 'notifications:list' %}" class="notif-viewall">Xem tất cả</a>
+                    </div>
+                </div>
+
+                <div class="user-menu-wrapper">
+                    <button type="button" class="user-menu-btn" onclick="toggleUserMenu(event)" aria-label="Tài khoản">
+                        <span class="user-avatar-circle">
+                            {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">{% else %}{{ user.get_full_name|default:user.email|first|upper }}{% endif %}
+                        </span>
+                        <span class="user-name-wrapper">
+                            <span class="user-name-text">{{ user.get_full_name|default:user.email }}</span>
+                            {% if user.role == 'staff' %}<span class="user-role-text" title="{{ user.get_role_display }}">Quản trị viên</span>{% endif %}
+                        </span>
+                        <svg class="user-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown" hidden>
+                        <div class="user-dropdown-header">
+                            <strong>{{ user.get_full_name|default:user.email }}</strong>
+                            <span>{{ user.email }}</span>
+                            {% if user.role == 'staff' %}<span class="role-badge role-staff">{{ user.get_role_display }}</span>{% endif %}
+                        </div>
+                        <a href="{% url 'accounts:my_profile' %}" class="user-dropdown-item">Hồ sơ của tôi</a>
+                        <a href="{% url 'accounts:profile_edit' %}" class="user-dropdown-item">Chỉnh sửa hồ sơ</a>
+                        <a href="{% url 'notifications:list' %}" class="user-dropdown-item">Thông báo cá nhân</a>
+                        <a href="{% url 'account_change_password' %}" class="user-dropdown-item">Đổi mật khẩu</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" onclick="showLogoutConfirm(event)" class="user-dropdown-item danger-text">Đăng xuất</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'account_login' %}" class="btn btn-secondary btn-header">Đăng nhập</a>
+                <a href="{% url 'account_signup' %}" class="btn btn-header">Đăng ký</a>
             {% endif %}
-        </nav>
-        <form method="get" action="{% url 'search:results' %}" class="search-bar header-search-bar">
-            <input type="text" name="q" id="headerSearchInput" placeholder="Tìm kiếm..." autocomplete="off" data-suggest-url="{% url 'search:suggest' %}" aria-label="Tìm kiếm">
-            <button type="submit" aria-label="Tìm kiếm">🔍</button>
-        </form>
-        {% if header_recent_searches %}{{ header_recent_searches|json_script:"headerRecentSearchesData" }}{% endif %}
-    </div>
-    <div class="header-right">
-        <button type="button" class="grid-menu-btn" onclick="toggleNavPanel(event)" aria-label="Menu">
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        </button>
-        <button type="button" class="theme-toggle" id="themeToggle" aria-label="Bật chế độ tối" aria-pressed="false" title="Chế độ sáng / tối">🌙</button>
-        {% if user.is_authenticated %}
-            <div class="notif-bell-wrapper">
-                <button type="button" class="bell-btn" onclick="toggleNotifDropdown(event)" aria-label="Thông báo">
-                    🔔
-                    {% if bell_unread_count > 0 %}
-                        <span class="bell-badge">{{ bell_unread_count }}</span>
-                    {% endif %}
-                </button>
-                <div class="notif-dropdown" id="notifDropdown" hidden>
-                    <div class="notif-dropdown-header">
-                        <strong>Thông báo</strong>
-                        <form method="post" action="{% url 'notifications:mark_all_read' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                            <button type="submit" class="notif-markall">Đánh dấu tất cả đã đọc</button>
-                        </form>
-                    </div>
-                    <div class="notif-tabs">
-                        <button type="button" class="notif-tab active" onclick="filterNotifTab(this, 'all')">Tất cả</button>
-                        <button type="button" class="notif-tab" onclick="filterNotifTab(this, 'unread')">Chưa đọc</button>
-                    </div>
-                    <div class="notif-list">
-                        {% for n in bell_notifications %}
-                            <a href="{% url 'notifications:click' n.pk %}" class="notif-item{% if not n.is_read %} unread{% endif %}" data-read="{{ n.is_read|yesno:'1,0' }}">
-                                <span class="notif-body">
-                                    <span class="notif-text">{% if n.message %}{{ n.message }}{% else %}{{ n.get_verb_display }}{% endif %}</span>
-                                    <span class="notif-time">{{ n.created_at|timesince }} trước</span>
-                                </span>
-                                {% if not n.is_read %}<span class="notif-dot"></span>{% endif %}
-                            </a>
-                        {% empty %}
-                            <p class="notif-empty">Không có thông báo nào.</p>
-                        {% endfor %}
-                    </div>
-                    <a href="{% url 'notifications:list' %}" class="notif-viewall">Xem tất cả</a>
-                </div>
-            </div>
-            <div class="user-menu-wrapper">
-                <button type="button" class="user-menu-btn" onclick="toggleUserMenu(event)">
-                    <span class="user-name">{{ user }}</span>
-                    {% if user.role == 'staff' %}<span class="pill">{{ user.get_role_display }}</span>{% endif %}
-                </button>
-                <div class="user-dropdown" id="userDropdown" hidden>
-                    <a href="{% url 'accounts:my_profile' %}">Hồ sơ của tôi</a>
-                    <a href="{% url 'account_change_password' %}">Đổi mật khẩu</a>
-                    <a href="#" onclick="showLogoutConfirm(event)">Đăng xuất</a>
-                </div>
-            </div>
-        {% else %}
-            <a href="{% url 'account_login' %}">Đăng nhập</a>
-            <a href="{% url 'account_signup' %}">Đăng ký</a>
-        {% endif %}
+        </div>
     </div>
 </header>
 <div class="nav-panel-overlay" id="navPanelOverlay" hidden onclick="document.getElementById('navPanelOverlay').hidden = true;">
@@ -659,9 +825,42 @@
         </div>
         <nav class="nav-panel-list">
             <a href="{% url 'search:results' %}">Tìm kiếm</a>
-            <a href="{% url 'announcements:list' %}">Thông báo của Khoa</a>
-            <a href="{% url 'forum:post_list' %}">Diễn đàn</a>
-            <a href="{% url 'groups:list' %}">Nhóm</a>
+            {% if user.is_authenticated %}<a href="{% url 'forum:post_create' %}">Đăng bài mới</a>{% endif %}
+            <div class="nav-panel-item-group">
+                <button type="button" class="nav-panel-accordion-btn" onclick="toggleAccordion(this)">
+                    Thông báo <span class="chevron">▾</span>
+                </button>
+                <div class="nav-panel-submenu" hidden>
+                    <a href="{% url 'announcements:list' %}">Tất cả thông báo</a>
+                    <a href="{% url 'announcements:list' %}?kind=official">📋 Thông tin học vụ</a>
+                    <a href="{% url 'announcements:list' %}?kind=event">🎪 Sự kiện & Phong trào</a>
+                </div>
+            </div>
+            <div class="nav-panel-item-group">
+                <button type="button" class="nav-panel-accordion-btn" onclick="toggleAccordion(this)">
+                    Diễn đàn <span class="chevron">▾</span>
+                </button>
+                <div class="nav-panel-submenu" hidden>
+                    <a href="{% url 'forum:post_list' %}">Tất cả bài viết</a>
+                    {% for cat in nav_categories %}
+                        <a href="{% url 'forum:post_list_by_category' cat.slug %}">📁 {{ cat.name }}</a>
+                    {% endfor %}
+                    <a href="{% url 'forum:category_list' %}">🏷️ Xem tất cả chuyên mục →</a>
+                </div>
+            </div>
+            <div class="nav-panel-item-group">
+                <button type="button" class="nav-panel-accordion-btn" onclick="toggleAccordion(this)">
+                    Nhóm <span class="chevron">▾</span>
+                </button>
+                <div class="nav-panel-submenu" hidden>
+                    <a href="{% url 'groups:list' %}">Tất cả nhóm</a>
+                    <a href="{% url 'groups:list' %}?recruiting=1">📢 Nhóm đang tuyển thành viên</a>
+                    {% if user.is_authenticated %}
+                        <a href="{{ user.get_absolute_url }}">👥 Nhóm tôi tham gia</a>
+                        <a href="{% url 'groups:create' %}">➕ Tạo nhóm mới</a>
+                    {% endif %}
+                </div>
+            </div>
             {% if user.is_authenticated %}
                 <a href="{% url 'notifications:list' %}">Thông báo cá nhân</a>
                 {% if user.role == 'staff' %}
@@ -713,48 +912,122 @@
 </div>
 <main>
     {% if messages %}
-    <div class="confirm-modal-overlay" id="messageModalOverlay" onclick="hideMessageModal(event)">
-        <div class="confirm-modal-card" onclick="event.stopPropagation();">
-            <h2>Thông báo</h2>
-            <ul class="messages">
-                {% for message in messages %}
-                    <li class="{{ message.tags }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-            <div class="confirm-modal-actions">
-                <button type="button" class="btn" style="width:100%;" onclick="hideMessageModal(event)">Đóng</button>
+    <div class="toast-container" id="toastContainer" aria-live="polite">
+        {% for message in messages %}
+        <div class="toast-item toast-{{ message.tags|default:'info' }}" role="alert">
+            <div class="toast-icon">
+                {% if 'success' in message.tags %}✓
+                {% elif 'error' in message.tags %}✕
+                {% elif 'warning' in message.tags %}⚠
+                {% else %}ℹ{% endif %}
             </div>
+            <div class="toast-content">
+                <div class="toast-title">
+                    {% if 'success' in message.tags %}Thành công
+                    {% elif 'error' in message.tags %}Có lỗi xảy ra
+                    {% elif 'warning' in message.tags %}Lưu ý
+                    {% else %}Thông báo{% endif %}
+                </div>
+                <div class="toast-message">{{ message }}</div>
+            </div>
+            <button type="button" class="toast-close" onclick="dismissToast(this.closest('.toast-item'))" aria-label="Đóng">&times;</button>
+            <div class="toast-progress"></div>
         </div>
+        {% endfor %}
     </div>
     {% endif %}
+    {% block breadcrumb %}{% endblock %}
     {% block content %}{% endblock %}
 </main>
+
+<button type="button" class="back-to-top" id="backToTopBtn" aria-label="Lên đầu trang" onclick="scrollToTop()" title="Cuộn lên đầu trang">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+</button>
+
 <footer class="site-footer">
     <div class="site-footer-inner">
         <div class="site-footer-brand">
-            <strong>EMT Forum</strong>
-            <p>Diễn đàn quản lý và trao đổi thông tin nội bộ Khoa Thương mại điện tử - Marketing và Công nghệ số, Trường Đại học Kinh tế - Đại học Đà Nẵng.</p>
+            <div class="footer-logo-wrap">
+                <img src="{% static 'img/logo.png' %}" alt="Khoa Thương mại điện tử - Marketing và Công nghệ số" class="footer-logo">
+            </div>
+            <p>Diễn đàn trao đổi học thuật, thông tin học vụ và kết nối sinh viên Khoa Thương mại điện tử - Marketing và Công nghệ số, Trường Đại học Kinh tế - Đại học Đà Nẵng.</p>
+            <p class="footer-address">71 Ngũ Hành Sơn, TP. Đà Nẵng</p>
         </div>
         <div class="site-footer-links">
-            <h4>Điều hướng nhanh</h4>
-            <a href="{% url 'announcements:list' %}">Thông tin / thông báo chính thức &amp; sự kiện</a>
+            <h4>Khám phá</h4>
+            <a href="{% url 'announcements:list' %}">Thông báo của Khoa</a>
             <a href="{% url 'forum:post_list' %}">Diễn đàn thảo luận</a>
-            <a href="{% url 'groups:list' %}">Danh sách nhóm</a>
+            <a href="{% url 'groups:list' %}">Nhóm học tập &amp; CLB</a>
+            <a href="{% url 'search:results' %}">Tìm kiếm</a>
+        </div>
+        <div class="site-footer-links">
+            <h4>Dành cho sinh viên</h4>
+            <a href="{% url 'forum:post_list_by_category' 'hoi-ap' %}">Hỏi đáp học vụ</a>
+            <a href="{% url 'groups:list' %}?recruiting=1">Nhóm tuyển thành viên</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'accounts:my_profile' %}">Hồ sơ của tôi</a>
+                <a href="{% url 'notifications:preferences' %}">Cài đặt thông báo</a>
+            {% endif %}
+        </div>
+        <div class="site-footer-links">
+            <h4>Liên kết</h4>
+            <a href="https://due.udn.vn" target="_blank" rel="noopener">Cổng thông tin DUE</a>
+            <a href="https://daotao.due.udn.vn" target="_blank" rel="noopener">Cổng đào tạo tín chỉ</a>
+            <a href="https://www.facebook.com/DUE.LCD.EMT" target="_blank" rel="noopener">Fanpage của Khoa</a>
         </div>
     </div>
-    <div class="site-footer-bottom">© {% now "Y" %} EMT Forum - Khoa Thương mại điện tử - Marketing và Công nghệ số.</div>
+    <div class="site-footer-bottom">
+        <span>&copy; {% now "Y" %} EMT Forum &middot; Khoa Thương mại điện tử - Marketing và Công nghệ số, Trường Đại học Kinh tế - Đại học Đà Nẵng.</span>
+    </div>
 </footer>
 <script>
+    function closeAllDropdowns(exceptId) {
+        ['notifDropdown', 'userDropdown', 'adminDropdown', 'announcementsDropdown', 'forumDropdown', 'groupsDropdown', 'postMenuDropdown'].forEach(function (id) {
+            if (id !== exceptId) {
+                var el = document.getElementById(id);
+                if (el) el.hidden = true;
+            }
+        });
+        document.querySelectorAll('.post-menu-dropdown').forEach(function (el) {
+            if (el.id !== exceptId) el.hidden = true;
+        });
+        document.querySelectorAll('.nav-dropdown-wrapper').forEach(function (w) {
+            var panel = w.querySelector('.nav-dropdown-panel');
+            if (panel && panel.id !== exceptId) {
+                panel.hidden = true;
+                w.classList.remove('open');
+            }
+        });
+    }
+
+    function toggleNavMenu(event, dropdownId) {
+        event.preventDefault();
+        event.stopPropagation();
+        var dropdown = document.getElementById(dropdownId);
+        if (dropdown) {
+            var willOpen = dropdown.hidden;
+            closeAllDropdowns(willOpen ? dropdownId : null);
+            dropdown.hidden = !willOpen;
+            var wrapper = dropdown.closest('.nav-dropdown-wrapper');
+            if (wrapper) {
+                wrapper.classList.toggle('open', willOpen);
+            }
+        }
+    }
+
     function toggleNotifDropdown(event) {
         event.stopPropagation();
         var dropdown = document.getElementById('notifDropdown');
         if (dropdown) {
-            dropdown.hidden = !dropdown.hidden;
+            var willOpen = dropdown.hidden;
+            closeAllDropdowns(willOpen ? 'notifDropdown' : null);
+            dropdown.hidden = !willOpen;
         }
     }
 
     function toggleNavPanel(event) {
         event.stopPropagation();
+        closeAllDropdowns(null);
         var overlay = document.getElementById('navPanelOverlay');
         if (overlay) {
             overlay.hidden = !overlay.hidden;
@@ -773,7 +1046,9 @@
         event.stopPropagation();
         var dropdown = document.getElementById('userDropdown');
         if (dropdown) {
-            dropdown.hidden = !dropdown.hidden;
+            var willOpen = dropdown.hidden;
+            closeAllDropdowns(willOpen ? 'userDropdown' : null);
+            dropdown.hidden = !willOpen;
         }
     }
 
@@ -810,6 +1085,106 @@
         }
     }
 
+    // Toast Notification Management
+    function dismissToast(el) {
+        if (!el) return;
+        el.classList.add('toast-hiding');
+        setTimeout(function() {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        }, 250);
+    }
+
+    // Auto-dismiss initial toasts
+    document.addEventListener('DOMContentLoaded', function() {
+        var toasts = document.querySelectorAll('.toast-item');
+        toasts.forEach(function(toast) {
+            setTimeout(function() {
+                dismissToast(toast);
+            }, 4500);
+        });
+    });
+
+    // Client-side Toast Helper (window.showToast)
+    window.showToast = function(message, type, title) {
+        var container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container';
+            container.setAttribute('aria-live', 'polite');
+            document.body.appendChild(container);
+        }
+        type = type || 'info';
+        var titles = {
+            success: 'Thành công',
+            error: 'Có lỗi xảy ra',
+            warning: 'Lưu ý',
+            info: 'Thông báo'
+        };
+        var icons = {
+            success: '✓',
+            error: '✕',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+        var item = document.createElement('div');
+        item.className = 'toast-item toast-' + type;
+        item.setAttribute('role', 'alert');
+        item.innerHTML = 
+            '<div class="toast-icon">' + (icons[type] || 'ℹ') + '</div>' +
+            '<div class="toast-content">' +
+                '<div class="toast-title">' + (title || titles[type] || 'Thông báo') + '</div>' +
+                '<div class="toast-message">' + message + '</div>' +
+            '</div>' +
+            '<button type="button" class="toast-close" onclick="dismissToast(this.closest(\'.toast-item\'))" aria-label="Đóng">&times;</button>' +
+            '<div class="toast-progress"></div>';
+        container.appendChild(item);
+        setTimeout(function() {
+            dismissToast(item);
+        }, 4500);
+    };
+
+    // Scroll To Top
+    function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    var backToTopBtn = document.getElementById('backToTopBtn');
+    window.addEventListener('scroll', function() {
+        if (!backToTopBtn) return;
+        if (window.scrollY > 280) {
+            backToTopBtn.classList.add('visible');
+        } else {
+            backToTopBtn.classList.remove('visible');
+        }
+    }, { passive: true });
+
+    // Keyboard Shortcuts: Ctrl+K or / to search, Esc to close modals/menus
+    document.addEventListener('keydown', function(event) {
+        if ((event.ctrlKey && (event.key === 'k' || event.key === 'K')) || 
+            (event.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName))) {
+            event.preventDefault();
+            var searchInput = document.getElementById('headerSearchInput');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        } else if (event.key === 'Escape') {
+            var notif = document.getElementById('notifDropdown');
+            if (notif) notif.hidden = true;
+            var user = document.getElementById('userDropdown');
+            if (user) user.hidden = true;
+            var admin = document.getElementById('adminDropdown');
+            if (admin) admin.hidden = true;
+            var overlay = document.getElementById('navPanelOverlay');
+            if (overlay) overlay.hidden = true;
+            var logout = document.getElementById('logoutConfirmOverlay');
+            if (logout) logout.hidden = true;
+            var del = document.getElementById('deleteConfirmOverlay');
+            if (del) del.hidden = true;
+        }
+    });
+
     function showDeleteConfirm(event, formAction, title) {
         event.preventDefault();
         document.getElementById('deleteConfirmTitle').textContent = title || 'Xác nhận xóa?';
@@ -831,15 +1206,48 @@
         event.stopPropagation();
         var dropdown = document.getElementById('adminDropdown');
         if (dropdown) {
-            dropdown.hidden = !dropdown.hidden;
+            var willOpen = dropdown.hidden;
+            closeAllDropdowns(willOpen ? 'adminDropdown' : null);
+            dropdown.hidden = !willOpen;
+            var wrapper = dropdown.closest('.admin-menu-wrapper');
+            if (wrapper) {
+                wrapper.classList.toggle('open', willOpen);
+            }
         }
     }
 
+    (function initAdminDropdownHover() {
+        var wrapper = document.querySelector('.admin-menu-wrapper');
+        if (!wrapper) return;
+        var dropdown = document.getElementById('adminDropdown');
+        var timer;
+
+        wrapper.addEventListener('mouseenter', function () {
+            clearTimeout(timer);
+            if (dropdown) {
+                dropdown.hidden = false;
+                wrapper.classList.add('open');
+            }
+        });
+
+        wrapper.addEventListener('mouseleave', function () {
+            timer = setTimeout(function () {
+                if (dropdown) {
+                    dropdown.hidden = true;
+                    wrapper.classList.remove('open');
+                }
+            }, 120);
+        });
+    })();
+
     function togglePostMenu(event) {
         event.stopPropagation();
-        var dropdown = document.getElementById('postMenuDropdown');
+        var btn = event.currentTarget;
+        var dropdown = btn.nextElementSibling || document.getElementById('postMenuDropdown');
         if (dropdown) {
-            dropdown.hidden = !dropdown.hidden;
+            var willOpen = dropdown.hidden;
+            closeAllDropdowns(willOpen ? dropdown.id : null);
+            dropdown.hidden = !willOpen;
         }
     }
 
@@ -852,26 +1260,33 @@
     }
 
     document.addEventListener('click', function (event) {
-        var dropdown = document.getElementById('notifDropdown');
-        var wrapper = document.querySelector('.notif-bell-wrapper');
-        if (dropdown && !dropdown.hidden && wrapper && !wrapper.contains(event.target)) {
-            dropdown.hidden = true;
+        var notifDropdown = document.getElementById('notifDropdown');
+        var notifWrapper = document.querySelector('.notif-bell-wrapper');
+        if (notifDropdown && !notifDropdown.hidden && (!notifWrapper || !notifWrapper.contains(event.target))) {
+            notifDropdown.hidden = true;
         }
         var userDropdown = document.getElementById('userDropdown');
         var userWrapper = document.querySelector('.user-menu-wrapper');
-        if (userDropdown && !userDropdown.hidden && userWrapper && !userWrapper.contains(event.target)) {
+        if (userDropdown && !userDropdown.hidden && (!userWrapper || !userWrapper.contains(event.target))) {
             userDropdown.hidden = true;
         }
         var adminDropdown = document.getElementById('adminDropdown');
         var adminWrapper = document.querySelector('.admin-menu-wrapper');
-        if (adminDropdown && !adminDropdown.hidden && adminWrapper && !adminWrapper.contains(event.target)) {
+        if (adminDropdown && !adminDropdown.hidden && (!adminWrapper || !adminWrapper.contains(event.target))) {
             adminDropdown.hidden = true;
         }
-        var postMenuDropdown = document.getElementById('postMenuDropdown');
-        var postMenuWrapper = document.querySelector('.post-menu-wrapper');
-        if (postMenuDropdown && !postMenuDropdown.hidden && postMenuWrapper && !postMenuWrapper.contains(event.target)) {
-            postMenuDropdown.hidden = true;
-        }
+        document.querySelectorAll('.post-menu-dropdown').forEach(function (dd) {
+            if (!dd.hidden && (!dd.parentElement || !dd.parentElement.contains(event.target))) {
+                dd.hidden = true;
+            }
+        });
+        document.querySelectorAll('.nav-dropdown-panel').forEach(function (panel) {
+            if (!panel.hidden && (!panel.parentElement || !panel.parentElement.contains(event.target))) {
+                panel.hidden = true;
+                var wrap = panel.closest('.nav-dropdown-wrapper');
+                if (wrap) wrap.classList.remove('open');
+            }
+        });
     });
 
     (function initHeaderSearchSuggest() {
@@ -1058,6 +1473,54 @@
             setTimeout(function () { root.classList.remove('theme-transition'); }, 300);
         });
         sync();
+    })();
+
+    // Xem trước hình ảnh trực tiếp khi tải lên (Global Live Image Preview)
+    (function () {
+        document.addEventListener('change', function (e) {
+            var input = e.target;
+            if (!input || input.type !== 'file') return;
+            if (input.id === 'directAvatarInput') return; // Đã có khung tròn xem trước riêng
+
+            var parent = input.closest('p, .form-group, div') || input.parentElement;
+            var existingBox = parent.querySelector('.live-image-preview-box');
+            if (existingBox) {
+                existingBox.remove();
+            }
+
+            if (!input.files || input.files.length === 0) return;
+
+            var file = input.files[0];
+            if (!file.type || !file.type.startsWith('image/')) return;
+
+            var objectUrl = URL.createObjectURL(file);
+            var sizeKb = Math.round(file.size / 1024);
+            var sizeText = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : sizeKb + ' KB';
+
+            var previewBox = document.createElement('div');
+            previewBox.className = 'live-image-preview-box';
+            previewBox.innerHTML =
+                '<div class="live-image-preview-card">' +
+                    '<img class="live-image-preview-thumb" src="' + objectUrl + '" alt="Xem trước">' +
+                    '<div class="live-image-preview-info">' +
+                        '<span class="live-image-preview-name">' + (file.name || 'Ảnh đã chọn') + '</span>' +
+                        '<span class="live-image-preview-meta">Dung lượng: ' + sizeText + ' · Đã sẵn sàng tải lên</span>' +
+                    '</div>' +
+                    '<button type="button" class="live-image-preview-clear" title="Hủy ảnh này" aria-label="Hủy ảnh này">' +
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                    '</button>' +
+                '</div>';
+
+            var clearBtn = previewBox.querySelector('.live-image-preview-clear');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function () {
+                    input.value = '';
+                    previewBox.remove();
+                });
+            }
+
+            input.insertAdjacentElement('afterend', previewBox);
+        });
     })();
 </script>
 </body>

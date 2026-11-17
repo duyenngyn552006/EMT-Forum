@@ -48,6 +48,14 @@
     .reaction-wrap:hover .reaction-picker, .reaction-wrap:focus-within .reaction-picker, .reaction-wrap.open .reaction-picker {
         opacity: 1; visibility: visible; transform: translateY(-4px); transition-delay: 0s;
     }
+    /* Đóng thanh picker ngay lập tức khi bấm chọn cảm xúc */
+    .reaction-wrap.picker-closed .reaction-picker {
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transform: translateY(6px) !important;
+        transition: none !important;
+    }
     .reaction-pick { border: none; background: none; font-size: 26px; line-height: 1; padding: 4px 5px; cursor: pointer; border-radius: 50%; transition: transform 0.12s; }
     .reaction-pick:hover, .reaction-pick:focus-visible { transform: scale(1.4) translateY(-3px); }
     .reaction-pick.active { background: #eaf1ff; }
@@ -72,8 +80,92 @@
             if (longPressed) { event.preventDefault(); longPressed = false; }  // nhan giu: chi mo thanh, khong gui
         });
         document.addEventListener('touchstart', function (event) {
-            if (!wrap.contains(event.target)) { wrap.classList.remove('open'); }
+            if (!wrap.contains(event.target)) {
+                wrap.classList.remove('open');
+                wrap.classList.remove('picker-closed');
+            }
         }, { passive: true });
+
+        // Chuột rời khỏi khối tương tác thì gỡ class picker-closed để có thể hover lại bình thường
+        wrap.addEventListener('mouseleave', function () {
+            wrap.classList.remove('picker-closed');
+        });
+        document.addEventListener('click', function (event) {
+            if (!wrap.contains(event.target)) {
+                wrap.classList.remove('open');
+                wrap.classList.remove('picker-closed');
+            }
+        });
+
+        // Tương tác bài viết không tải lại trang (AJAX Reaction)
+        wrap.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!form || form.tagName !== 'FORM') return;
+            e.preventDefault();
+
+            // Đóng thanh cảm xúc ngay lập tức khi người dùng click chọn
+            wrap.classList.add('picker-closed');
+            wrap.classList.remove('open');
+            if (document.activeElement && wrap.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
+
+            var formData = new FormData(form);
+            var actionUrl = form.action;
+
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                if (!data) return;
+
+                if (data.liked) {
+                    btn.classList.add('active');
+                    var mainInput = btn.form ? btn.form.querySelector('input[name="reaction"]') : null;
+                    if (mainInput) mainInput.value = data.reaction || 'like';
+                } else {
+                    btn.classList.remove('active');
+                    var mainInput = btn.form ? btn.form.querySelector('input[name="reaction"]') : null;
+                    if (mainInput) mainInput.value = 'like';
+                }
+
+                var rxMap = {
+                    'like': ['👍', 'Thích'],
+                    'love': ['❤️', 'Yêu thích'],
+                    'wow': ['😮', 'Ngạc nhiên'],
+                    'idea': ['💡', 'Hay']
+                };
+                var rx = rxMap[data.reaction] || ['👍', 'Thích'];
+                var emoji = data.emoji || rx[0];
+                var label = data.label || rx[1];
+                var countHtml = (data.count && data.count > 0) ? '<span class="count">' + data.count + '</span>' : '';
+                btn.innerHTML = emoji + ' ' + countHtml + ' ' + label;
+
+                // Cập nhật trạng thái active trong bảng chọn emoji
+                var pickBtns = wrap.querySelectorAll('.reaction-pick');
+                pickBtns.forEach(function (pBtn) {
+                    var pForm = pBtn.closest('form');
+                    var pInput = pForm ? pForm.querySelector('input[name="reaction"]') : null;
+                    if (pInput && data.liked && pInput.value === data.reaction) {
+                        pBtn.classList.add('active');
+                    } else {
+                        pBtn.classList.remove('active');
+                    }
+                });
+            })
+            .catch(function (err) {
+                // Fallback nếu có lỗi mạng
+                form.submit();
+            });
+        });
     })();
 </script>
 
@@ -86,7 +178,7 @@
             {% csrf_token %}
             <a class="list-avatar" href="{{ user.get_absolute_url }}">{{ user.get_full_name|default:user.email|first|upper }}</a>
             <div style="flex:1; position:relative;">
-                <textarea name="body" rows="3" placeholder="Viết bình luận... (gõ @ để gắn thẻ thành viên)" required class="js-mention-input"></textarea>
+                <textarea name="body" rows="3" placeholder="Viết bình luận..." required class="js-mention-input"></textarea>
                 <div class="comment-composer-actions">
                     <button class="btn" type="submit">Gửi bình luận</button>
                 </div>
@@ -101,7 +193,7 @@
             <div class="comment-item">
                 <a class="list-avatar" href="{{ comment.author.get_absolute_url }}">{{ comment.author.get_full_name|default:comment.author.email|first|upper }}</a>
                 <div class="comment-main">
-                    <div class="comment-bubble" id="comment-bubble-{{ comment.pk }}">
+                    <div class="comment-bubble{% if model_key == 'forumpost' and comment.pk == accepted_answer_id %} comment-bubble-accepted{% endif %}" id="comment-bubble-{{ comment.pk }}">
                         <span class="comment-author"><a class="author-link" href="{{ comment.author.get_absolute_url }}">{{ comment.author }}</a></span>
                         <span class="comment-time">{{ comment.created_at|date:"d/m/Y H:i" }}{% if comment.is_edited %} · đã chỉnh sửa{% endif %}</span>
                         {% if comment.status == "pending_review" %}<span class="status-tag">Chờ kiểm duyệt</span>{% endif %}
@@ -111,19 +203,31 @@
 
                     <div class="comment-actions-row">
                         {% if user.is_authenticated %}
-                            <button type="button" class="reply-toggle-btn" onclick="toggleReplyForm({{ comment.pk }})">Trả lời</button>
+                            <button type="button" class="reply-toggle-btn" onclick="toggleReplyForm({{ comment.pk }})">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 14-5-5 5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+                                Trả lời
+                            </button>
                         {% endif %}
                         {% if model_key == "forumpost" and can_accept_answer and object.is_question and comment.status == "published" %}
                             <form method="post" action="{% url 'forum:accept_answer' object.pk comment.pk %}" style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" class="reply-toggle-btn">{% if comment.pk == accepted_answer_id %}Bỏ chọn câu trả lời{% else %}✔ Chọn là câu trả lời{% endif %}</button>
+                                <button type="submit" class="reply-toggle-btn" style="color:var(--color-success);">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    {% if comment.pk == accepted_answer_id %}Bỏ chọn câu trả lời{% else %}Chọn là câu trả lời{% endif %}
+                                </button>
                             </form>
                         {% endif %}
                         {% if user == comment.author or user.role == "staff" %}
-                            <button type="button" class="reply-toggle-btn" onclick="toggleEditForm({{ comment.pk }})">Sửa</button>
+                            <button type="button" class="reply-toggle-btn" onclick="toggleEditForm({{ comment.pk }})">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                Sửa
+                            </button>
                             <form method="post" action="{% url 'interactions:delete_comment' comment.pk %}" style="display:inline;" onsubmit="return confirm('Xóa bình luận này?');">
                                 {% csrf_token %}
-                                <button type="submit" class="reply-toggle-btn danger-text">Xóa</button>
+                                <button type="submit" class="reply-toggle-btn danger-text">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                                    Xóa
+                                </button>
                             </form>
                         {% endif %}
                     </div>
@@ -134,7 +238,8 @@
                             <div style="flex:1;">
                                 <textarea name="body" rows="2" required>{{ comment.body }}</textarea>
                                 <div class="comment-composer-actions">
-                                    <button class="btn btn-secondary" type="submit">Lưu</button>
+                                    <button class="btn btn-secondary" type="button" onclick="toggleEditForm({{ comment.pk }})" style="padding:5px 12px; font-size:13px; margin-right:6px;">Hủy</button>
+                                    <button class="btn" type="submit" style="padding:5px 12px; font-size:13px;">Lưu</button>
                                 </div>
                             </div>
                         </form>
@@ -154,10 +259,16 @@
                                         </div>
                                         {% if user == reply.author or user.role == "staff" %}
                                             <div class="comment-actions-row">
-                                                <button type="button" class="reply-toggle-btn" onclick="toggleEditForm({{ reply.pk }})">Sửa</button>
+                                                <button type="button" class="reply-toggle-btn" onclick="toggleEditForm({{ reply.pk }})">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                                    Sửa
+                                                </button>
                                                 <form method="post" action="{% url 'interactions:delete_comment' reply.pk %}" style="display:inline;" onsubmit="return confirm('Xóa bình luận này?');">
                                                     {% csrf_token %}
-                                                    <button type="submit" class="reply-toggle-btn danger-text">Xóa</button>
+                                                    <button type="submit" class="reply-toggle-btn danger-text">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                                                        Xóa
+                                                    </button>
                                                 </form>
                                             </div>
                                             <form method="post" action="{% url 'interactions:edit_comment' reply.pk %}" class="reply-form" id="edit-form-{{ reply.pk }}" hidden>
@@ -165,7 +276,8 @@
                                                 <div style="flex:1;">
                                                     <textarea name="body" rows="2" required>{{ reply.body }}</textarea>
                                                     <div class="comment-composer-actions">
-                                                        <button class="btn btn-secondary" type="submit">Lưu</button>
+                                                        <button class="btn btn-secondary" type="button" onclick="toggleEditForm({{ reply.pk }})" style="padding:5px 12px; font-size:13px; margin-right:6px;">Hủy</button>
+                                                        <button class="btn" type="submit" style="padding:5px 12px; font-size:13px;">Lưu</button>
                                                     </div>
                                                 </div>
                                             </form>
@@ -184,7 +296,8 @@
                             <div style="flex:1; position:relative;">
                                 <textarea name="body" rows="2" placeholder="Viết trả lời {{ comment.author }}..." required class="js-mention-input"></textarea>
                                 <div class="comment-composer-actions">
-                                    <button class="btn btn-secondary" type="submit">Gửi trả lời</button>
+                                    <button class="btn btn-secondary" type="button" onclick="toggleReplyForm({{ comment.pk }})" style="padding:5px 12px; font-size:13px; margin-right:6px;">Hủy</button>
+                                    <button class="btn" type="submit" style="padding:5px 12px; font-size:13px;">Gửi trả lời</button>
                                 </div>
                             </div>
                         </form>

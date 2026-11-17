@@ -2,13 +2,81 @@
 {% load static %}
 {% block title %}Trang chủ - EMT Forum{% endblock %}
 {% block content %}
-<div class="home-banner">
-    <img src="{% static 'img/banner.png' %}" alt="Diễn đàn Khoa Thương mại điện tử - Marketing và Công nghệ số">
+{# Banner Slide Trang chủ - Nhỏ gọn, tự động chuyển slide #}
+<div class="home-slider-wrapper" id="homeBannerSlider">
+    <div class="home-slider-track">
+        {# Slide 1: Ảnh chính Diễn đàn Khoa TMĐT (chuẩn 6400x2140px) #}
+        <div class="home-slide active" data-index="0">
+            <img src="{% static 'img/banners/banner-forum.jpg' %}?v=3" alt="Diễn đàn kết nối - Khoa Thương mại điện tử - Marketing và Công nghệ số" class="slide-img">
+        </div>
+        {# Slide 2: Tuyển sinh Khoa TMĐT 2026 (Frame 6) #}
+        <div class="home-slide" data-index="1">
+            <a href="https://due.udn.vn/vi-vn/khoathuongmaidientu" target="_blank" rel="noopener noreferrer" title="Xem thông tin tuyển sinh Khoa TMĐT 2026">
+                <img src="{% static 'img/banners/banner-tuyensinh.jpg' %}" alt="Tuyển sinh 2026 - Khoa Thương mại điện tử - Trường Đại học Kinh tế ĐH Đà Nẵng" class="slide-img">
+            </a>
+        </div>
+        {# Slide 3: Chương trình đào tạo SME Growth 2026 (Frame 8) #}
+        <div class="home-slide" data-index="2">
+            <a href="https://smegrowth.due.udn.vn" target="_blank" rel="noopener noreferrer" title="Khám phá chương trình SME Growth 2026">
+                <img src="{% static 'img/banners/banner-smegrowth.png' %}" alt="Chương trình đào tạo Hỗ trợ Doanh nghiệp nhỏ và vừa SME Growth 2026" class="slide-img">
+            </a>
+        </div>
+        {# Slide 4: Ngày Nhà giáo Việt Nam 20/11 (Frame 4) #}
+        <div class="home-slide" data-index="3">
+            <img src="{% static 'img/banners/banner-nhagiao.jpg' %}" alt="Chào mừng kỷ niệm 44 năm Ngày Nhà giáo Việt Nam 20/11" class="slide-img">
+        </div>
+    </div>
+
+    {# Nút chuyển slide Trước / Sau #}
+    <button type="button" class="slider-btn slider-prev" onclick="changeSlide(-1)" aria-label="Slide trước">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <button type="button" class="slider-btn slider-next" onclick="changeSlide(1)" aria-label="Slide tiếp theo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+
+    {# Thanh chỉ báo vị trí slide (Dots) #}
+    <div class="slider-dots" id="sliderDots">
+        <button type="button" class="dot-btn active" onclick="goToSlide(0)" aria-label="Chuyển đến slide 1"></button>
+        <button type="button" class="dot-btn" onclick="goToSlide(1)" aria-label="Chuyển đến slide 2"></button>
+        <button type="button" class="dot-btn" onclick="goToSlide(2)" aria-label="Chuyển đến slide 3"></button>
+        <button type="button" class="dot-btn" onclick="goToSlide(3)" aria-label="Chuyển đến slide 4"></button>
+    </div>
+</div>
+
+{# Thanh phím tắt điều hướng nhanh dành cho sinh viên #}
+<div class="home-quick-actions">
+    <a href="{% url 'forum:post_list_by_category' 'hoi-ap' %}" class="quick-action-card">
+        <div class="quick-action-icon qa-question">❓</div>
+        <span class="quick-action-title">Hỏi đáp học vụ</span>
+    </a>
+    <a href="{% url 'groups:list' %}?recruiting=1" class="quick-action-card">
+        <div class="quick-action-icon qa-team">👥</div>
+        <span class="quick-action-title">Nhóm tuyển thành viên</span>
+    </a>
+    <a href="{% url 'announcements:list' %}" class="quick-action-card">
+        <div class="quick-action-icon qa-bell">📢</div>
+        <span class="quick-action-title">Thông báo từ Khoa</span>
+    </a>
+    <a href="{% url 'forum:post_create' %}" class="quick-action-card">
+        <div class="quick-action-icon qa-post">✍️</div>
+        <span class="quick-action-title">Đăng bài thảo luận</span>
+    </a>
 </div>
 
 <div class="home-split-73">
+    {# Cột trái: Thông báo chính thức #}
     <div class="card">
-        <h2>Thông báo của Khoa</h2>
+        <div class="section-heading">
+            <div class="section-title-wrap">
+                <span class="section-icon-badge sec-announcement">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+                </span>
+                <h2>Thông báo</h2>
+            </div>
+            <a class="more-link more-link-sm" href="{% url 'announcements:list' %}">Xem tất cả <span class="arrow" aria-hidden="true">→</span></a>
+        </div>
+
         {% for a in announcements %}
         <div class="list-card{% if a.is_pinned %} pinned{% endif %}">
             {% if a.featured_image %}
@@ -17,69 +85,137 @@
                 <a class="list-avatar" href="{{ a.author.get_absolute_url }}">{{ a.author.get_full_name|default:a.author.email|first|upper }}</a>
             {% endif %}
             <div class="list-body">
-                <div class="list-meta">
-                    {% if a.is_pinned %}<span class="badge">📌 Đã ghim</span>{% endif %}
-                    <span class="badge">{{ a.get_kind_display }}</span>
-                    <span><a class="author-link" href="{{ a.author.get_absolute_url }}">{{ a.author }}</a></span>
-                    <span>· {{ a.created_at|date:"d/m/Y H:i" }}</span>
-                    <span>· 👁️ {{ a.view_count }}</span>
-                    <span>· 💬 {{ a.comment_count }}</span>
+                <div class="list-meta" style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:8px;">
+                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+                        {% if a.is_pinned %}
+                            <span class="badge badge-pinned">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+                                Đã ghim
+                            </span>
+                        {% endif %}
+                        <span class="badge">{{ a.get_kind_display }}</span>
+                        <span><a class="author-link" href="{{ a.author.get_absolute_url }}">{{ a.author }}</a></span>
+                        <span class="meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            {{ a.view_count }}
+                        </span>
+                        <span class="meta-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            {{ a.comment_count }}
+                        </span>
+                    </div>
+                    <span style="font-size:12.5px; color:var(--color-text-muted); white-space:nowrap; flex-shrink:0;">{{ a.created_at|date:"d/m/Y H:i" }}</span>
                 </div>
                 <h3 class="list-title"><a href="{{ a.get_absolute_url }}">{{ a.title }}</a></h3>
                 <p class="list-excerpt">{{ a.body|striptags|truncatewords:28 }}</p>
+                {% if a.kind == "event" and a.event_datetime %}
+                    <p class="list-excerpt meta-item" style="margin-top:6px; color:#d97706; font-weight:600;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Diễn ra: {{ a.event_time_display }}
+                    </p>
+                {% endif %}
             </div>
         </div>
         {% empty %}
-        <p>Chưa có thông báo nào.</p>
+        <p style="color:var(--color-text-muted); padding:16px 0;">Chưa có thông báo nào.</p>
         {% endfor %}
-        <a class="more-link" href="{% url 'announcements:list' %}">Xem tất cả thông báo <span class="arrow" aria-hidden="true">→</span></a>
     </div>
 
+    {# Cột phải: Xu hướng xem nhiều #}
     <div class="card">
-        <h2>👁️ Lượt xem cao</h2>
+        <div class="section-heading">
+            <div class="section-title-wrap">
+                <span class="section-icon-badge sec-trending">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                </span>
+                <h2>Quan tâm nhiều</h2>
+            </div>
+            <a class="more-link more-link-sm" href="{% url 'forum:post_list' %}">Khám phá <span class="arrow" aria-hidden="true">→</span></a>
+        </div>
+
         {% for p in trending_posts %}
-        <a href="{{ p.get_absolute_url }}" class="feed-list-row">
-            {% if p.featured_image %}
-                <img src="{{ p.featured_image.url }}" alt="" class="feed-list-thumb">
-            {% else %}
-                <div class="feed-list-thumb-placeholder">{{ p.category.name }}</div>
-            {% endif %}
-            <span class="feed-list-title">{{ p.title }}<br><span style="font-weight:400;color:#6b7280;">👁️ {{ p.view_count }} lượt xem</span></span>
+        <a href="{{ p.get_absolute_url }}" class="trending-feed-item">
+            <span class="trending-rank-num top-{{ forloop.counter }}">0{{ forloop.counter }}</span>
+            <div class="trending-feed-body">
+                <div class="trending-feed-title">{{ p.title }}</div>
+                <div class="list-meta" style="margin:0;">
+                    <span class="badge" style="font-size:11px; padding:1px 7px;">{{ p.category.name }}</span>
+                    <span>{{ p.author.get_full_name|default:p.author.email }}</span>
+                    <span class="meta-item">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        {{ p.comment_count }}
+                    </span>
+                    <span class="meta-item">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        {{ p.view_count }}
+                    </span>
+                </div>
+            </div>
         </a>
         {% empty %}
-        <p>Chưa có bài viết nào.</p>
+        <p style="color:var(--color-text-muted); padding:12px 0;">Chưa có bài viết nào.</p>
         {% endfor %}
-        <a class="more-link" href="{% url 'forum:post_list' %}">Xem thêm bài viết <span class="arrow" aria-hidden="true">→</span></a>
     </div>
 </div>
 
+{# Khối thảo luận sôi nổi #}
 {% if top_discussed_posts %}
-<div class="card">
-    <h2>🔥 Độ thảo luận sôi nổi</h2>
+<div class="card" style="margin-top:20px;">
+    <div class="section-heading">
+        <div class="section-title-wrap">
+            <span class="section-icon-badge sec-fire">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            </span>
+            <h2>Thảo luận sôi nổi gần đây</h2>
+        </div>
+        <a class="more-link more-link-sm" href="{% url 'forum:post_list' %}?sort=activity">Xem diễn đàn <span class="arrow" aria-hidden="true">→</span></a>
+    </div>
     {% for p in top_discussed_posts %}
-    <div class="list-card">
+    <div class="list-card" style="padding:14px 16px;">
         <a class="list-avatar" href="{{ p.author.get_absolute_url }}">{{ p.author.get_full_name|default:p.author.email|first|upper }}</a>
         <div class="list-body">
-            <div class="list-meta">
-                <span class="badge">{{ p.category.name }}</span>
-                <span><a class="author-link" href="{{ p.author.get_absolute_url }}">{{ p.author }}</a></span>
-                <span>· 💬 {{ p.comment_count }} bình luận</span>
+            <div class="list-meta" style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:8px;">
+                <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <span class="badge">{{ p.category.name }}</span>
+                    <span><a class="author-link" href="{{ p.author.get_absolute_url }}">{{ p.author }}</a></span>
+                    <span class="meta-item" style="color:var(--color-primary); font-weight:600;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        {{ p.comment_count }} phản hồi
+                    </span>
+                    <span class="meta-item">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        {{ p.view_count }}
+                    </span>
+                </div>
+                <span style="font-size:12.5px; color:var(--color-text-muted); white-space:nowrap; flex-shrink:0;">{{ p.created_at|date:"d/m/Y H:i" }}</span>
             </div>
             <h3 class="list-title"><a href="{{ p.get_absolute_url }}">{{ p.title }}</a></h3>
+            <p class="list-excerpt" style="margin:4px 0 0; font-size:13px; color:var(--color-text-muted);">{{ p.body|striptags|truncatewords:24 }}</p>
         </div>
     </div>
     {% endfor %}
 </div>
 {% endif %}
 
+{# Bảng xếp hạng tháng #}
 {% if group_leaderboard or leaderboard %}
-<div class="home-split-50">
+<div class="home-split-50" style="margin-top:20px;">
+    {# BXH Nhóm #}
     <div class="card">
-        <h2>👥 BXH nhóm sôi nổi tháng này</h2>
+        <div class="section-heading">
+            <div class="section-title-wrap">
+                <span class="section-icon-badge sec-group">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                <h2>BXH nhóm năng nổ</h2>
+            </div>
+            <a class="more-link more-link-sm" href="{% url 'groups:list' %}">Tất cả nhóm <span class="arrow" aria-hidden="true">→</span></a>
+        </div>
+
         {% for g in group_leaderboard %}
-        <div class="list-card" style="align-items:center;">
-            <div style="flex-shrink:0;width:28px;text-align:center;font-weight:bold;color:#10233f;">
-                {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
+        <div class="list-card" style="align-items:center; padding:12px 14px;">
+            <div class="rank-badge {% if forloop.counter <= 3 %}rank-{{ forloop.counter }}{% else %}rank-other{% endif %}">
+                {{ forloop.counter }}
             </div>
             {% if g.logo %}
                 <img src="{{ g.logo.url }}" alt="" class="list-avatar">
@@ -87,41 +223,138 @@
                 <div class="list-avatar">{{ g.name|first|upper }}</div>
             {% endif %}
             <div class="list-body">
-                <h3 class="list-title"><a href="{{ g.get_absolute_url }}">{{ g.name }}</a></h3>
-                <div class="list-meta">
-                    <span>📝 {{ g.post_count }} bài đăng</span>
-                    <span>· 👥 {{ g.member_count }} thành viên</span>
+                <h3 class="list-title" style="font-size:14.5px;"><a href="{{ g.get_absolute_url }}">{{ g.name }}</a></h3>
+                <div class="list-meta" style="margin:0;">
+                    <span class="meta-item">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        {{ g.post_count }} bài đăng
+                    </span>
+                    <span>·</span>
+                    <span class="meta-item">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        {{ g.member_count }} thành viên
+                    </span>
                 </div>
             </div>
         </div>
         {% empty %}
-        <p>Chưa có nhóm nào hoạt động trong tháng.</p>
+        <p style="color:var(--color-text-muted); padding:12px 0;">Chưa có nhóm nào hoạt động trong tháng.</p>
         {% endfor %}
     </div>
 
+    {# BXH Cá nhân #}
     <div class="card">
-        <h2>🏆 BXH cá nhân tháng này</h2>
+        <div class="section-heading">
+            <div class="section-title-wrap">
+                <span class="section-icon-badge sec-trophy">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                </span>
+                <h2>Bảng vinh danh tháng</h2>
+            </div>
+            <span style="font-size:12px; color:var(--color-text-muted); font-weight:600;">Cá nhân tích cực</span>
+        </div>
+
         {% for u in leaderboard %}
-        <div class="list-card" style="align-items:center;">
-            <div style="flex-shrink:0;width:28px;text-align:center;font-weight:bold;color:#10233f;">
-                {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
+        <div class="list-card" style="align-items:center; padding:12px 14px;">
+            <div class="rank-badge {% if forloop.counter <= 3 %}rank-{{ forloop.counter }}{% else %}rank-other{% endif %}">
+                {{ forloop.counter }}
             </div>
             <a class="list-avatar" href="{{ u.get_absolute_url }}">
                 {% if u.avatar %}<img src="{{ u.avatar.url }}" alt="">{% else %}{{ u.get_full_name|default:u.email|first|upper }}{% endif %}
             </a>
             <div class="list-body">
-                <h3 class="list-title"><a href="{{ u.get_absolute_url }}">{{ u.get_full_name|default:u.email }}</a> {% if user.is_authenticated and user.role == "staff" %}<span class="pill">{{ u.get_role_display }}</span>{% endif %}</h3>
-                <div class="list-meta">
-                    <span>📝 {{ u.post_count }} bài viết</span>
-                    <span>· 💬 {{ u.comment_count }} bình luận</span>
-                    <span>· <strong>{{ u.total_score }} điểm</strong></span>
+                <h3 class="list-title" style="font-size:14.5px;">
+                    <a href="{{ u.get_absolute_url }}">{{ u.get_full_name|default:u.email }}</a>
+                    {% if user.is_authenticated and user.role == "staff" %}<span class="role-badge role-{{ u.role }}">{{ u.get_role_display }}</span>{% endif %}
+                </h3>
+                <div class="list-meta" style="margin:0;">
+                    <span>{{ u.post_count }} bài viết</span>
+                    <span>· {{ u.comment_count }} bình luận</span>
+                    <span class="score-badge">★ {{ u.total_score }} điểm</span>
                 </div>
             </div>
         </div>
         {% empty %}
-        <p>Chưa có thành viên nào tương tác trong tháng.</p>
+        <p style="color:var(--color-text-muted); padding:12px 0;">Chưa có thành viên nào tương tác trong tháng.</p>
         {% endfor %}
     </div>
 </div>
 {% endif %}
+
+<script>
+    (function initHomeSlider() {
+        var slider = document.getElementById('homeBannerSlider');
+        if (!slider) return;
+
+        var slides = slider.querySelectorAll('.home-slide');
+        var dots = slider.querySelectorAll('.dot-btn');
+        var currentIndex = 0;
+        var timer = null;
+        var intervalMs = 4500; // Tự động chuyển sau 4.5 giây
+
+        function showSlide(index) {
+            if (index < 0) index = slides.length - 1;
+            if (index >= slides.length) index = 0;
+            currentIndex = index;
+
+            slides.forEach(function (slide, idx) {
+                slide.classList.toggle('active', idx === currentIndex);
+            });
+            dots.forEach(function (dot, idx) {
+                dot.classList.toggle('active', idx === currentIndex);
+            });
+        }
+
+        window.changeSlide = function (delta) {
+            resetTimer();
+            showSlide(currentIndex + delta);
+        };
+
+        window.goToSlide = function (index) {
+            resetTimer();
+            showSlide(index);
+        };
+
+        function startTimer() {
+            if (!timer) {
+                timer = setInterval(function () {
+                    showSlide(currentIndex + 1);
+                }, intervalMs);
+            }
+        }
+
+        function stopTimer() {
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        function resetTimer() {
+            stopTimer();
+            startTimer();
+        }
+
+        slider.addEventListener('mouseenter', stopTimer);
+        slider.addEventListener('mouseleave', startTimer);
+
+        // Hỗ trợ cảm ứng vuốt trên điện thoại (touch swipe)
+        var touchStartX = 0;
+        slider.addEventListener('touchstart', function (e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        slider.addEventListener('touchend', function (e) {
+            var diff = e.changedTouches[0].screenX - touchStartX;
+            if (Math.abs(diff) > 40) {
+                if (diff < 0) {
+                    window.changeSlide(1);
+                } else {
+                    window.changeSlide(-1);
+                }
+            }
+        }, { passive: true });
+
+        startTimer();
+    })();
+</script>
 {% endblock %}

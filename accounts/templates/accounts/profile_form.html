@@ -1,12 +1,46 @@
 {% extends "base.html" %}
-{% block title %}Chỉnh sửa hồ sơ{% endblock %}
+{% load static %}
+{% block title %}Chỉnh sửa hồ sơ - EMT Forum{% endblock %}
+{% block breadcrumb %}
+<nav class="breadcrumb-nav" aria-label="Đường dẫn">
+    <a href="{% url 'home' %}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Trang chủ</span>
+    </a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'accounts:my_profile' %}">Hồ sơ cá nhân</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-current">Chỉnh sửa hồ sơ</span>
+</nav>
+{% endblock %}
 {% block content %}
-<div class="card">
-    <h1>Chỉnh sửa hồ sơ</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button class="btn" type="submit">Lưu</button>
-    </form>
+<div style="max-width: 760px; margin: 0 auto;">
+    <div class="card" style="padding: 28px 32px; border-radius: var(--radius-lg);">
+        <div class="section-heading" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--color-border);">
+            <div class="section-title-wrap">
+                <span class="section-icon-badge sec-groups">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </span>
+                <h1 style="font-size: 22px; font-weight: 800; margin: 0; color: var(--color-heading);">Chỉnh sửa thông tin cá nhân</h1>
+            </div>
+            <a href="{% url 'accounts:my_profile' %}" class="more-link more-link-sm">
+                Quay lại hồ sơ
+            </a>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="modern-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--color-border);">
+                <button class="btn btn-primary" type="submit" style="min-width: 130px; font-weight: 700;">
+                    Lưu thay đổi
+                </button>
+                <a href="{% url 'accounts:my_profile' %}" class="btn btn-secondary" style="font-weight: 600;">
+                    Hủy bỏ
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
