@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "moderation/base_moderation.html" %}
 {% block title %}Quản lý chuyên mục{% endblock %}
-{% block content %}
+{% block mod_content %}
 <div class="card">
     <h1>Chuyên mục diễn đàn</h1>
     <a class="btn" href="{% url 'forum:category_create' %}">+ Thêm chuyên mục</a>

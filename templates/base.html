@@ -628,7 +628,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     {% block extra_head %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=28">
+    <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=29">
     <style>
     .group-breadcrumb {
         display: flex;
@@ -764,7 +764,7 @@
                 {% if user.is_authenticated and user.role == 'staff' %}
                     <div class="admin-menu-wrapper nav-dropdown-wrapper">
                         <div class="nav-dropdown-trigger">
-                            <a href="{% url 'moderation:pending_content_list' %}" class="admin-menu-btn nav-link-item{% if '/moderation/' in request.path or '/dashboard/' in request.path or '/users/' in request.path %} active{% endif %}">
+                            <a href="{% url 'moderation:pending_content_list' %}" class="admin-menu-btn nav-link-item{% if '/moderation/' in request.path or '/dashboard/' in request.path or '/users/' in request.path or '/forum/categories/' in request.path %} active{% endif %}">
                                 <span>Quản trị</span>
                                 <button type="button" class="nav-chevron-btn" onclick="toggleAdminMenu(event)" aria-label="Mở rộng quản trị">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -779,6 +779,7 @@
                             <a href="{% url 'moderation:hidden_content_list' %}">Nội dung đã ẩn</a>
                             <a href="{% url 'moderation:appeal_list' %}">Kháng nghị</a>
                             <div class="dropdown-divider"></div>
+                            <a href="{% url 'forum:category_list' %}">Quản lý chuyên mục</a>
                             <a href="{% url 'moderation:keyword_list' %}">Từ khóa nhạy cảm</a>
                             <a href="{% url 'moderation:log_list' %}">Nhật ký kiểm duyệt</a>
                             <a href="{% url 'accounts:user_list' %}">Quản lý tài khoản</a>
@@ -935,6 +936,7 @@
                         <a href="{% url 'moderation:pending_content_list' %}">Duyệt nội dung</a>
                         <a href="{% url 'moderation:hidden_content_list' %}">Nội dung đã ẩn</a>
                         <a href="{% url 'moderation:appeal_list' %}">Kháng nghị</a>
+                        <a href="{% url 'forum:category_list' %}">Quản lý chuyên mục</a>
                         <a href="{% url 'moderation:keyword_list' %}">Từ khóa nhạy cảm</a>
                         <a href="{% url 'moderation:log_list' %}">Nhật ký kiểm duyệt</a>
                         <a href="{% url 'accounts:user_list' %}">Quản lý tài khoản</a>

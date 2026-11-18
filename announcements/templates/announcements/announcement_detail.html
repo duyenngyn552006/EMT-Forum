@@ -121,6 +121,7 @@
           <div class="post-menu-dropdown" id="postMenuDropdown" hidden>
             {% if can_edit %}
               <a href="{% url 'announcements:edit' announcement.pk %}"><i class="bi bi-pencil"></i> Sửa</a>
+              <a class="danger-text" href="#" data-url="{% url 'announcements:delete' announcement.pk %}" data-msg='Xác nhận xóa thông báo "{{ announcement.title|escapejs }}"?' onclick="event.preventDefault();showDeleteConfirm(event,this.dataset.url,this.dataset.msg)"><i class="bi bi-trash"></i> Xóa</a>
             {% endif %}
             {% if can_pin %}
               {% if announcement.is_pinned %}
@@ -130,9 +131,7 @@
               {% endif %}
             {% endif %}
             <form method="post" action="{% url 'interactions:toggle_save' 'announcement' announcement.pk %}">{% csrf_token %}<button type="submit"><i class="bi {% if user_has_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i> {% if user_has_saved %}Bỏ lưu thông báo{% else %}Lưu thông báo{% endif %}</button></form>
-            {% if can_report %}
-              <a class="danger-text" href="{% url 'moderation:create_report' 'announcement' announcement.pk %}"><i class="bi bi-flag"></i> Báo cáo vi phạm</a>
-            {% endif %}
+            <form method="post" action="{% url 'interactions:toggle_follow' 'announcement' announcement.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ announcement.get_absolute_url }}"><button type="submit"><i class="bi {% if is_following_post %}bi-bell-slash{% else %}bi-bell{% endif %}"></i> {% if is_following_post %}Bỏ theo dõi thông báo{% else %}Theo dõi thông báo{% endif %}</button></form>
           </div>
         </div>
       </div>

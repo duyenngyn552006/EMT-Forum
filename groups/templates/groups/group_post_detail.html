@@ -26,6 +26,7 @@
 <article class="pd-card">
   <div class="pd-top-bar">
     <div class="pd-top-badges">
+      {% if post.is_pinned %}<span class="pd-tag-pill"><i class="bi bi-pin-angle-fill"></i> Đã ghim</span>{% endif %}
       {% if post.category %}<span class="pd-tag-pill"><i class="bi bi-tag"></i> {{ post.get_category_display }}</span>{% endif %}
     </div>
     {% if user.is_authenticated %}
@@ -37,7 +38,16 @@
               <a href="{% url 'groups:post_edit' post.group.slug post.pk %}"><i class="bi bi-pencil"></i> Sửa</a>
               <a class="danger-text" href="#" data-url="{% url 'groups:post_delete' post.group.slug post.pk %}" data-msg='Xác nhận xóa bài viết "{{ post.title|escapejs }}"?' onclick="event.preventDefault();showDeleteConfirm(event,this.dataset.url,this.dataset.msg)"><i class="bi bi-trash"></i> Xóa</a>
             {% endif %}
+            {% if is_manager and post.status == "published" %}
+              <form method="post" action="{% url 'groups:post_pin' post.group.slug post.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ post.get_absolute_url }}">
+                <input type="hidden" name="action" value="{% if post.is_pinned %}unpin{% else %}pin{% endif %}">
+                <button type="submit"><i class="bi {% if post.is_pinned %}bi-pin-angle{% else %}bi-pin-angle-fill{% endif %}"></i> {% if post.is_pinned %}Bỏ ghim{% else %}Ghim bài{% endif %}</button>
+              </form>
+            {% endif %}
             <form method="post" action="{% url 'interactions:toggle_save' 'grouppost' post.pk %}">{% csrf_token %}<button type="submit"><i class="bi {% if user_has_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i> {% if user_has_saved %}Bỏ lưu bài viết{% else %}Lưu bài viết{% endif %}</button></form>
+            <form method="post" action="{% url 'interactions:toggle_follow' 'grouppost' post.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ post.get_absolute_url }}"><button type="submit"><i class="bi {% if is_following_post %}bi-bell-slash{% else %}bi-bell{% endif %}"></i> {% if is_following_post %}Bỏ theo dõi bài viết{% else %}Theo dõi bài viết{% endif %}</button></form>
             <a class="danger-text" href="{% url 'moderation:create_report' 'grouppost' post.pk %}"><i class="bi bi-flag"></i> Báo cáo vi phạm</a>
           </div>
         </div>

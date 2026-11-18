@@ -126,6 +126,7 @@ class AnnouncementDetailView(DetailView):
     def get_context_data(self, **kwargs):
         from django.contrib.contenttypes.models import ContentType
 
+        from interactions.follows import is_following
         from interactions.utils import get_interaction_context, get_top_level_comments
 
         ctx = super().get_context_data(**kwargs)
@@ -134,6 +135,7 @@ class AnnouncementDetailView(DetailView):
         ctx["model_key"] = "announcement"
         ctx["comments"] = get_top_level_comments(content_type, self.object.pk, viewer=user)
         ctx.update(get_interaction_context(user, self.object))
+        ctx["is_following_post"] = is_following(user, self.object)
 
         ctx["now"] = timezone.now()
         is_admin = _is_admin(user)
@@ -267,6 +269,19 @@ def announcement_unpin(request, pk):
     services.unpin_announcement(announcement, request.user)
     messages.success(request, "Đã bỏ ghim thông báo.")
     return redirect(announcement.get_absolute_url())
+
+
+@login_required
+@require_POST
+def announcement_delete(request, pk):
+    announcement = get_object_or_404(Announcement, pk=pk)
+    if not _can_edit_announcement(request.user, announcement):
+        messages.error(request, "Bạn không có quyền xóa thông báo này.")
+        return redirect(announcement.get_absolute_url())
+    announcement.status = ContentStatus.DELETED
+    announcement.save(update_fields=["status"])
+    messages.success(request, "Đã xóa thông báo.")
+    return redirect("announcements:list")
 
 
 @login_required
