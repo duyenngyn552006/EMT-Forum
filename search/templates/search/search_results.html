@@ -9,11 +9,25 @@
     input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 
-    /* ---------- Khung tìm kiếm cố định khi cuộn ---------- */
-    /* Nếu menu trên cùng của site cũng cố định, đặt --sr-top-offset bằng chiều cao menu*/
-    :root { --sr-top-offset: 0px; --sr-head-h: 0px; }
-    .sr-head { position: sticky; top: var(--sr-top-offset); z-index: 30; transition: box-shadow .2s, padding .2s; }
-    .sr-head.is-stuck { box-shadow: 0 6px 16px rgba(0,0,0,.10); }
+/* ---------- Khung tìm kiếm cố định ngay dưới menu chính ---------- */
+:root {
+    --sr-top-offset: 72px; /* Giá trị mặc định (tầm chiều cao của menu trên) */
+    --sr-head-h: 0px;
+}
+
+.sr-head {
+    position: sticky;
+    top: var(--sr-top-offset);
+    z-index: 29; /* Nhỏ hơn z-index của menu trên cùng 1 chút để dropdown menu (Thông báo, Diễn đàn...) xổ xuống không bị che */
+    background-color: #f8fafc; /* Đổi thành màu nền trang web của bạn (hoặc #ffffff) */
+    padding-top: 12px;
+    padding-bottom: 12px;
+    transition: box-shadow .2s, padding .2s;
+}
+
+.sr-head.is-stuck {
+    box-shadow: 0 6px 16px rgba(0,0,0,.10);
+}
 
     /* Thu gọn: tiêu đề + ô tìm kiếm cùng 1 hàng, "Tìm gần đây" nằm ngay dưới */
     .sr-head {
