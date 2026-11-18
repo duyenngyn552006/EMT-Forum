@@ -1,13 +1,15 @@
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 
 from config.mixins import ContentStatus, PinLimitExceeded
 from config.sanitize import sanitize_html
 from moderation.services import find_sensitive_keyword, log_action
 from notifications.models import Notification
+from notifications.services import notify
 from notifications.tasks import broadcast_notification
 
-from .models import Announcement, AnnouncementEditHistory
+from .models import Announcement, AnnouncementEditHistory, EventRegistration
 
 
 def pin_announcement(announcement: Announcement, actor):
@@ -98,3 +100,38 @@ def update_announcement(
             content_object=announcement,
         )
     return announcement, keyword
+
+
+def notify_admins_event_registration(registration: EventRegistration):
+    """Gui thong bao cho nhom Quan tri vien (Giao vu Khoa, BCH Khoa, Giang vien, Superuser)
+    khi co sinh vien dang ky tham gia su kien."""
+    from accounts.models import User
+
+    announcement = registration.announcement
+    recipients = list(
+        User.objects.filter(is_active=True).filter(
+            Q(role__in=[User.Role.STAFF, User.Role.BCH, User.Role.LECTURER])
+            | Q(is_superuser=True)
+        )
+    )
+    recipient_ids = {u.pk for u in recipients}
+    if announcement.author and announcement.author.is_active and announcement.author_id not in recipient_ids:
+        recipients.append(announcement.author)
+
+    registrant_name = registration.full_name or str(registration.user)
+    prefix = f'{registrant_name} đã đăng ký tham gia "'
+    suffix = '"'
+    max_title_len = max(10, 255 - len(prefix) - len(suffix))
+    event_title = announcement.title
+    if len(event_title) > max_title_len:
+        event_title = event_title[: max_title_len - 1].rstrip() + "…"
+    message = f"{prefix}{event_title}{suffix}"[:255]
+
+    for admin_user in recipients:
+        notify(
+            recipient=admin_user,
+            verb=Notification.Verb.EVENT_REGISTRATION,
+            actor=registration.user,
+            message=message,
+            content_object=registration,
+        )

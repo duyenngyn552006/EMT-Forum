@@ -1,92 +1,421 @@
-
 {% extends "base.html" %}
 {% block title %}Thông báo cá nhân{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  .nf-wrap { max-width: 860px; margin: 0 auto; }
+
+  .nf-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .nf-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nf-title-group h1 {
+    margin: 0;
+    font-size: 1.45rem;
+    color: var(--color-text, #0f172a);
+  }
+  .nf-unread-pill {
+    font-size: .78rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 99px;
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+
+  .nf-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .nf-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border, #e2e8f0);
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #334155) !important;
+    font: inherit;
+    font-size: .84rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .nf-action-btn:hover {
+    background: var(--color-surface-muted, #f1f5f9);
+    border-color: #cbd5e1;
+  }
+  .nf-action-btn.primary {
+    background: #0f294a;
+    border-color: #0f294a;
+    color: #fff !important;
+  }
+  .nf-action-btn.primary:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+  }
+
+  .nf-panel {
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .nf-filters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+  }
+  .nf-status-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--color-surface-muted, #f1f5f9);
+    padding: 3px;
+    border-radius: 9px;
+  }
+  .nf-status-tabs a {
+    padding: 5px 12px;
+    border-radius: 7px;
+    font-size: .84rem;
+    font-weight: 600;
+    color: var(--color-text-muted, #475569) !important;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .nf-status-tabs a:hover { color: var(--color-text, #0f172a) !important; }
+  .nf-status-tabs a.active {
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #0f172a) !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  }
+
+  .nf-type-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .nf-type-pills a {
+    padding: 5px 11px;
+    border-radius: 99px;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--color-text-muted, #64748b) !important;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .nf-type-pills a:hover {
+    background: var(--color-surface-muted, #f1f5f9);
+    color: var(--color-text, #0f172a) !important;
+  }
+  .nf-type-pills a.active {
+    background: #eff6ff;
+    color: #1d4ed8 !important;
+    border-color: #bfdbfe;
+  }
+
+  .nf-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .nf-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-border-subtle, #edf2f7);
+    transition: background 0.14s ease;
+  }
+  .nf-item:last-child { border-bottom: none; }
+  .nf-item:hover { background: var(--color-surface-muted, #f8fafc); }
+  .nf-item.is-unread { background: #f4f8ff; }
+  .nf-item.is-unread:hover { background: #eaf2ff; }
+
+  .nf-ico {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--color-surface-muted, #f1f5f9);
+    color: #0f294a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.02rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .nf-item.is-unread .nf-ico {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .nf-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .nf-msg {
+    margin: 0;
+    font-size: .93rem;
+    line-height: 1.48;
+    color: var(--color-text, #0f172a);
+  }
+  .nf-item.is-unread .nf-msg { font-weight: 600; }
+  .nf-msg a {
+    color: inherit !important;
+    text-decoration: none;
+  }
+  .nf-msg a:hover { color: #1d4ed8 !important; }
+
+  .nf-meta {
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: .8rem;
+    color: var(--color-text-muted, #64748b);
+  }
+  .nf-verb {
+    font-weight: 600;
+    color: var(--color-text-muted, #475569);
+  }
+  .nf-link {
+    font-weight: 600;
+    color: #1d4ed8 !important;
+    text-decoration: none;
+  }
+  .nf-link:hover { text-decoration: underline; }
+
+  .nf-side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .nf-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2563eb;
+  }
+  .nf-mark-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border, #dbe3ee);
+    background: var(--color-surface, #fff);
+    color: var(--color-text-muted, #64748b);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: .95rem;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .nf-mark-btn:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #93c5fd;
+  }
+
+  .nf-empty {
+    padding: 46px 24px;
+    text-align: center;
+  }
+  .nf-empty-ico {
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 12px;
+    border-radius: 12px;
+    background: var(--color-surface-muted, #f1f5f9);
+    color: var(--color-text-muted, #64748b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+  }
+  .nf-empty h2 {
+    margin: 0 0 6px;
+    font-size: 1.02rem;
+    color: var(--color-text, #0f172a);
+  }
+  .nf-empty p {
+    margin: 0;
+    font-size: .88rem;
+    color: var(--color-text-muted, #64748b);
+  }
+
+  html[data-theme="dark"] .nf-unread-pill { background: #13284d; color: #93c5fd; }
+  html[data-theme="dark"] .nf-action-btn.primary { background: #1d4ed8; border-color: #1d4ed8; }
+  html[data-theme="dark"] .nf-type-pills a.active { background: #13284d; color: #93c5fd !important; border-color: #1e3a66; }
+  html[data-theme="dark"] .nf-item.is-unread { background: #13213a; }
+  html[data-theme="dark"] .nf-item.is-unread:hover { background: #182a4a; }
+  html[data-theme="dark"] .nf-ico { color: #93c5fd; }
+  html[data-theme="dark"] .nf-item.is-unread .nf-ico { background: #1e3a66; color: #93c5fd; }
+  html[data-theme="dark"] .nf-link { color: #7cb3ff !important; }
+  html[data-theme="dark"] .nf-mark-btn:hover { background: #13284d; color: #93c5fd; border-color: #2f5aa8; }
+
+  @media (max-width: 640px) {
+    .nf-filters { padding: 12px 14px; }
+    .nf-item { padding: 12px 14px; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-    <h1>Thông báo của bạn</h1>
-
-    <a class="btn btn-secondary" href="{% url 'notifications:preferences' %}">Cài đặt</a>
-    <a class="btn btn-secondary" href="{% url 'notifications:deadlines' %}">Hạn chót của tôi</a>
-    <a class="btn btn-secondary" href="{% url 'interactions:following' %}">Mục đang theo dõi</a>
-
-    <form method="post" action="{% url 'notifications:mark_all_read' %}" style="display:inline;">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <button class="btn btn-secondary" type="submit">Đánh dấu tất cả đã đọc</button>
-    </form>
-
-    <!-- Lọc trạng thái thông báo -->
-    <div class="filter-pills" style="margin-top:12px;">
-        <a href="?filter=all&type=all"
-           {% if current_filter == "all" %}class="active"{% endif %}>
-            Tất cả
-        </a>
-
-        <a href="?filter=unread&type=all"
-           {% if current_filter == "unread" %}class="active"{% endif %}>
-            Chưa đọc
-        </a>
+<div class="nf-wrap">
+  <div class="nf-top">
+    <div class="nf-title-group">
+      <h1>Thông báo của bạn</h1>
+      {% if unread_count > 0 %}
+        <span class="nf-unread-pill">{{ unread_count }} chưa đọc</span>
+      {% endif %}
     </div>
 
-    <!-- Lọc theo loại thông báo -->
-    <div class="filter-pills" style="margin-top:10px;">
-        <a href="?filter={{ current_filter }}&type=announcement"
-           {% if current_type == "announcement" %}class="active"{% endif %}>
-            Thông báo mới
+    <div class="nf-top-actions">
+      {% if user.role == "student" and not user.is_superuser %}
+        <a class="nf-action-btn" href="{% url 'notifications:deadlines' %}">
+          <i class="bi bi-alarm"></i> Hạn chót
         </a>
-
-
-
-        <a href="?filter={{ current_filter }}&type=comment"
-           {% if current_type == "comment" %}class="active"{% endif %}>
-            Bình luận
-        </a>
-
-        <a href="?filter={{ current_filter }}&type=group"
-           {% if current_type == "group" %}class="active"{% endif %}>
-            Hoạt động nhóm
-        </a>
-    </div>
-</div>
-
-{% for n in notifications %}
-<div class="card" {% if not n.is_read %}style="border-left:4px solid #10233f;"{% endif %}>
-    <p>
-        {{ n.get_verb_display }}
-        {% if n.message %}: {{ n.message }}{% endif %}
-    </p>
-
-    <p>
-        <small>{{ n.created_at|date:"d/m/Y H:i" }}</small>
-    </p>
-
-{% if n.content_object %}
-    <p style="margin: 8px 0;">
-        <a href="{% url 'notifications:click' n.pk %}"
-           style="font-weight: 600; color: #10233f; text-decoration: none;">
-            {% if n.content_object.title %}
-                {{ n.content_object.title }}
-            {% else %}
-                Xem nội dung thông báo
-            {% endif %}
-        </a>
-    </p>
-{% endif %}
-
-    {% if not n.is_read %}
-        <form method="post" action="{% url 'notifications:mark_read' n.pk %}">
-            {% csrf_token %}
-            <button class="btn btn-secondary" type="submit">
-                Đánh dấu đã đọc
-            </button>
+      {% endif %}
+      <a class="nf-action-btn" href="{% url 'interactions:following' %}">
+        <i class="bi bi-bookmark"></i> Đang theo dõi
+      </a>
+      <a class="nf-action-btn" href="{% url 'notifications:preferences' %}">
+        <i class="bi bi-gear"></i> Cài đặt
+      </a>
+      {% if unread_count > 0 %}
+        <form method="post" action="{% url 'notifications:mark_all_read' %}" style="margin:0;">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button class="nf-action-btn primary" type="submit">
+            <i class="bi bi-check2-all"></i> Đọc tất cả
+          </button>
         </form>
-    {% endif %}
-</div>
-{% empty %}
-<div class="card">
-    <p>Không có thông báo nào.</p>
-</div>
-{% endfor %}
+      {% endif %}
+    </div>
+  </div>
 
+  <section class="nf-panel">
+    <div class="nf-filters">
+      <div class="nf-status-tabs" role="tablist" aria-label="Trạng thái thông báo">
+        <a href="?filter=all&type={{ current_type }}" class="{% if current_filter == 'all' %}active{% endif %}">
+          Tất cả
+        </a>
+        <a href="?filter=unread&type={{ current_type }}" class="{% if current_filter == 'unread' %}active{% endif %}">
+          Chưa đọc
+        </a>
+      </div>
+
+      <div class="nf-type-pills" aria-label="Phân loại thông báo">
+        <a href="?filter={{ current_filter }}&type=all" class="{% if current_type == 'all' %}active{% endif %}">
+          Tất cả loại
+        </a>
+        <a href="?filter={{ current_filter }}&type=announcement" class="{% if current_type == 'announcement' %}active{% endif %}">
+          Thông báo mới
+        </a>
+        <a href="?filter={{ current_filter }}&type=comment" class="{% if current_type == 'comment' %}active{% endif %}">
+          Bình luận
+        </a>
+        <a href="?filter={{ current_filter }}&type=group" class="{% if current_type == 'group' %}active{% endif %}">
+          Hoạt động nhóm
+        </a>
+      </div>
+    </div>
+
+    {% if notifications %}
+      <div class="nf-list">
+        {% for n in notifications %}
+          <div class="nf-item{% if not n.is_read %} is-unread{% endif %}">
+            <div class="nf-ico" aria-hidden="true">
+              {% if n.verb == "event_registration" %}
+                <i class="bi bi-calendar-check"></i>
+              {% elif n.verb == "new_announcement" %}
+                <i class="bi bi-megaphone"></i>
+              {% elif n.verb == "deadline_reminder" %}
+                <i class="bi bi-clock"></i>
+              {% elif n.verb == "comment" or n.verb == "reply" or n.verb == "mention" %}
+                <i class="bi bi-chat-dots"></i>
+              {% elif n.verb == "like" %}
+                <i class="bi bi-hand-thumbs-up"></i>
+              {% elif "group_" in n.verb %}
+                <i class="bi bi-people"></i>
+              {% else %}
+                <i class="bi bi-bell"></i>
+              {% endif %}
+            </div>
+
+            <div class="nf-body">
+              <p class="nf-msg">
+                {% if n.content_object %}
+                  <a href="{% url 'notifications:click' n.pk %}">
+                    {% if n.message %}{{ n.message }}{% else %}{{ n.get_verb_display }}{% endif %}
+                  </a>
+                {% else %}
+                  {% if n.message %}{{ n.message }}{% else %}{{ n.get_verb_display }}{% endif %}
+                {% endif %}
+              </p>
+
+              <div class="nf-meta">
+                <span class="nf-verb">{{ n.get_verb_display }}</span>
+                <span>·</span>
+                <span>{{ n.created_at|date:"d/m/Y H:i" }}</span>
+                {% if n.content_object %}
+                  <span>·</span>
+                  <a class="nf-link" href="{% url 'notifications:click' n.pk %}">Xem chi tiết →</a>
+                {% endif %}
+              </div>
+            </div>
+
+            {% if not n.is_read %}
+              <div class="nf-side">
+                <span class="nf-dot" title="Chưa đọc"></span>
+                <form method="post" action="{% url 'notifications:mark_read' n.pk %}" style="margin:0;">
+                  {% csrf_token %}
+                  <button class="nf-mark-btn" type="submit" title="Đánh dấu đã đọc" aria-label="Đánh dấu đã đọc">
+                    <i class="bi bi-check2"></i>
+                  </button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="nf-empty">
+        <div class="nf-empty-ico"><i class="bi bi-bell-slash"></i></div>
+        <h2>Không có thông báo nào</h2>
+        <p>
+          {% if current_filter == "unread" %}
+            Bạn đã đọc hết tất cả thông báo.
+          {% else %}
+            Các cập nhật mới về thông báo Khoa, bình luận và hoạt động nhóm sẽ hiển thị tại đây.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </section>
+</div>
 {% endblock %}

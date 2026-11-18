@@ -12,4 +12,5 @@ urlpatterns = [
     path("preferences/", views.preferences, name="preferences"),
     path("deadlines/", views.deadline_list, name="deadlines"),
     path("deadlines/<int:announcement_pk>/complete/", views.complete_deadline, name="complete_deadline"),
+    path("deadlines/<int:announcement_pk>/uncomplete/", views.uncomplete_deadline, name="uncomplete_deadline"),
 ]

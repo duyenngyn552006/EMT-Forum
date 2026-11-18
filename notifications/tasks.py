@@ -52,8 +52,10 @@ def send_deadline_reminders():
 
         recipients = User.objects.filter(
             is_active=True,
-            role__in=[User.Role.STUDENT, User.Role.BCH],
-        ).exclude(deadline_completions__announcement=announcement)
+            role=User.Role.STUDENT,
+        ).exclude(deadline_completions__announcement=announcement).exclude(
+            event_registrations__announcement=announcement
+        )
 
         for recipient in recipients.iterator():
             with transaction.atomic():

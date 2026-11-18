@@ -1,7 +1,9 @@
+import re
+
 from django import forms
 from django.forms import inlineformset_factory
 
-from .models import Announcement, AnnouncementAttachment
+from .models import Announcement, AnnouncementAttachment, EventRegistration
 
 
 EVENT_MODE_SINGLE = "single"
@@ -103,3 +105,81 @@ AnnouncementAttachmentFormSet = inlineformset_factory(
         "caption": forms.TextInput(attrs={"placeholder": "Chú thích (không bắt buộc)"}),
     },
 )
+
+
+class EventRegistrationForm(forms.ModelForm):
+    class Meta:
+        model = EventRegistration
+        fields = ["full_name", "student_id", "class_name", "email", "phone", "note"]
+        labels = {
+            "full_name": "Họ và tên",
+            "student_id": "Mã số sinh viên / Cán bộ",
+            "class_name": "Lớp",
+            "email": "Email liên hệ",
+            "phone": "Số điện thoại",
+            "note": "Ghi chú / Câu hỏi cho BTC",
+        }
+        widgets = {
+            "full_name": forms.TextInput(attrs={"placeholder": "VD: Nguyễn Văn A", "required": True}),
+            "student_id": forms.TextInput(attrs={"placeholder": "VD: 221121514101", "required": True}),
+            "class_name": forms.TextInput(attrs={"placeholder": "VD: 48K22.1"}),
+            "email": forms.EmailInput(attrs={"placeholder": "VD: email@due.udn.vn", "required": True}),
+            "phone": forms.TextInput(attrs={"placeholder": "VD: 0905123456", "type": "tel", "required": True}),
+            "note": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Câu hỏi, yêu cầu hỗ trợ hoặc mong muốn khi tham gia (không bắt buộc)...",
+                }
+            ),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+        self.fields["full_name"].required = True
+        self.fields["student_id"].required = True
+        self.fields["email"].required = True
+        self.fields["phone"].required = True
+        self.fields["note"].required = False
+
+        if user and getattr(user, "has_class_name_field", False):
+            self.fields["class_name"].required = True
+            self.fields["class_name"].widget.attrs["required"] = True
+        else:
+            self.fields["class_name"].required = False
+
+        if user and not self.is_bound:
+            self.fields["full_name"].initial = user.get_full_name()
+            self.fields["student_id"].initial = user.student_id
+            self.fields["class_name"].initial = user.class_name
+            self.fields["email"].initial = user.email
+            self.fields["phone"].initial = user.phone
+
+    def clean_full_name(self):
+        value = (self.cleaned_data.get("full_name") or "").strip()
+        if not value:
+            raise forms.ValidationError("Vui lòng nhập họ và tên.")
+        return value
+
+    def clean_student_id(self):
+        value = (self.cleaned_data.get("student_id") or "").strip()
+        if not value:
+            raise forms.ValidationError("Vui lòng nhập mã số sinh viên / cán bộ.")
+        return value
+
+    def clean_class_name(self):
+        value = (self.cleaned_data.get("class_name") or "").strip()
+        if self.fields["class_name"].required and not value:
+            raise forms.ValidationError("Vui lòng nhập lớp của bạn.")
+        return value
+
+    def clean_phone(self):
+        value = (self.cleaned_data.get("phone") or "").strip()
+        digits = re.sub(r"\D", "", value)
+        if len(digits) < 9 or len(digits) > 15:
+            raise forms.ValidationError("Số điện thoại không hợp lệ (cần từ 9 đến 15 chữ số).")
+        return value
+
+    def clean_note(self):
+        return (self.cleaned_data.get("note") or "").strip()

@@ -1,0 +1,126 @@
+{% extends "announcements/base_announcements.html" %}
+{% block title %}Đăng ký sự kiện: {{ announcement.title }}{% endblock %}
+{% block announcement_head %}
+<style>
+  .er-wrap { max-width: none; margin: 0; }
+  .er-header {
+    background: linear-gradient(110deg, #0b2545, #1e40af);
+    color: #fff;
+    border-radius: 16px 16px 0 0;
+    padding: 22px 26px;
+  }
+  .er-header h1 { margin: 0 0 6px; font-size: 1.35rem; color: #fff !important; }
+  .er-header p { margin: 0; font-size: .9rem; color: #dbeafe; }
+  .er-card {
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    padding: 24px 26px;
+  }
+  .er-event-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--color-surface-muted, #f1f5f9);
+    font-size: .88rem;
+    color: var(--color-text, #0f172a);
+    margin-bottom: 20px;
+  }
+  .er-event-summary span { display: inline-flex; align-items: center; gap: 6px; }
+  .er-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .er-field { margin-bottom: 14px; }
+  .er-field label { display: block; font-size: .88rem; font-weight: 600; margin-bottom: 6px; color: var(--color-text, #0f172a); }
+  .er-req { color: #dc2626; margin-left: 2px; }
+  .er-field input, .er-field textarea {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    border-radius: 10px;
+  }
+  .er-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-border-subtle, #edf2f7); }
+  @media (max-width: 600px) { .er-grid { grid-template-columns: 1fr; gap: 0; } }
+</style>
+{% endblock %}
+
+{% block announcement_content %}
+<div class="er-wrap">
+  <nav class="pd-breadcrumb">
+    <a href="{% url 'announcements:list' %}"><i class="bi bi-megaphone"></i> Thông báo</a>
+    <span class="pd-sep">/</span>
+    <a href="{% url 'announcements:detail' announcement.pk %}">{{ announcement.title|truncatechars:45 }}</a>
+    <span class="pd-sep">/</span>
+    <span class="pd-curr">Đăng ký tham gia</span>
+  </nav>
+
+  <div class="er-header">
+    <h1><i class="bi bi-calendar-check"></i> Đăng ký tham gia sự kiện</h1>
+    <p>{{ announcement.title }}</p>
+  </div>
+
+  <div class="er-card">
+    <div class="er-event-summary">
+      {% if announcement.event_datetime %}
+        <span><i class="bi bi-calendar-event"></i> <strong>Thời gian:</strong> {{ announcement.event_time_display }}</span>
+      {% endif %}
+      {% if announcement.deadline_at %}
+        <span><i class="bi bi-clock"></i> <strong>Hạn đăng ký:</strong> {{ announcement.deadline_at|date:"d/m/Y H:i" }}</span>
+      {% endif %}
+    </div>
+
+    <form method="post" action="{% url 'announcements:register_event' announcement.pk %}" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="errorlist nonfield">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="er-field">
+        <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}<span class="er-req">*</span></label>
+        {{ form.full_name }}
+        {{ form.full_name.errors }}
+      </div>
+
+      <div class="er-grid">
+        <div class="er-field">
+          <label for="{{ form.student_id.id_for_label }}">{{ form.student_id.label }}<span class="er-req">*</span></label>
+          {{ form.student_id }}
+          {{ form.student_id.errors }}
+        </div>
+        <div class="er-field">
+          <label for="{{ form.class_name.id_for_label }}">
+            {{ form.class_name.label }}{% if form.class_name.field.required %}<span class="er-req">*</span>{% endif %}
+          </label>
+          {{ form.class_name }}
+          {{ form.class_name.errors }}
+        </div>
+      </div>
+
+      <div class="er-grid">
+        <div class="er-field">
+          <label for="{{ form.email.id_for_label }}">{{ form.email.label }}<span class="er-req">*</span></label>
+          {{ form.email }}
+          {{ form.email.errors }}
+        </div>
+        <div class="er-field">
+          <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}<span class="er-req">*</span></label>
+          {{ form.phone }}
+          {{ form.phone.errors }}
+        </div>
+      </div>
+
+      <div class="er-field">
+        <label for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+        {{ form.note }}
+        {{ form.note.errors }}
+      </div>
+
+      <div class="er-actions">
+        <a href="{% url 'announcements:detail' announcement.pk %}" class="btn btn-outline">Quay lại</a>
+        <button type="submit" class="btn"><i class="bi bi-check2-circle"></i> Xác nhận đăng ký</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

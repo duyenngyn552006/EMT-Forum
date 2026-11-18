@@ -23,6 +23,7 @@ class Notification(models.Model):
         ANSWER_ACCEPTED = "answer_accepted", "Câu trả lời được chọn"
         FOLLOW_UPDATE = "follow_update", "Cập nhật theo dõi"
         DEADLINE_REMINDER = "deadline_reminder", "Nhắc hạn chót"
+        EVENT_REGISTRATION = "event_registration", "Đăng ký sự kiện mới"
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     actor = models.ForeignKey(

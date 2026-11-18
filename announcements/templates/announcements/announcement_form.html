@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "announcements/base_announcements.html" %}
 {% block title %}{% if object %}Chỉnh sửa thông báo{% else %}Đăng thông báo mới{% endif %} | EMT Forum{% endblock %}
-{% block extra_head %}{{ form.media }}{% endblock %}
-{% block content %}
+{% block announcement_head %}{{ form.media }}{% endblock %}
+{% block announcement_content %}
 <style>
     .event-panel { background: var(--color-surface-muted, #f8fafc); border: 1px solid var(--color-border, #dbe3ee); border-radius: 12px; padding: 16px 18px 12px; margin: 4px 0 18px; }
     .event-panel[hidden] { display: none; }
