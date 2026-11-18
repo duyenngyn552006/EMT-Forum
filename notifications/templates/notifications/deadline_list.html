@@ -1,99 +1,209 @@
+{% extends "announcements/base_announcements.html" %}
+{% block title %}EMT Community - Hạn chót của tôi{% endblock %}
 
-{% extends "base.html" %}
-{% block title %}Hạn chót của tôi{% endblock %}
+{% block announcement_head %}
+<style>
+  .cm-hero { background: linear-gradient(110deg, #0b2545, #1e40af); color: #fff; border-radius: 16px; padding: 24px 28px; margin-bottom: 14px; }
+  .cm-hero h1 { margin: 0 0 6px; font-size: 1.55rem; color: #fff !important; }
+  .cm-hero p { margin: 0 0 12px; color: #dbeafe; font-size: .95rem; }
+  .cm-hero-btn { display: inline-block; background: #fff; color: #0f294a !important; font-weight: 700; font-size: .85rem; padding: 7px 16px; border-radius: 99px; text-decoration: none; border: none; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .cm-hero-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18); color: #0f294a !important; }
+  .cm-bar { padding: 10px 14px; }
+  .cm-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cm-tabs a { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 99px; font-size: .88rem; font-weight: 600; color: var(--color-text-muted, #475569); text-decoration: none; transition: background 0.15s ease, color 0.15s ease; }
+  .cm-tabs a.active, .cm-tabs a:hover { background: #eff6ff; color: #1d4ed8 !important; }
+  .cm-av { overflow: hidden; }
+  .cm-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-{% block content %}
+  .dl-post.urgency-urgent { border-left: 4px solid #dc2626; }
+  .dl-post.urgency-soon { border-left: 4px solid #d97706; }
+  .dl-post.urgency-done { border-left: 4px solid #16a34a; opacity: .9; }
+  .dl-post.urgency-expired { border-left: 4px solid #94a3b8; opacity: .82; }
 
-<div class="notice-page">
+  .cm-tag.dl-urgent { background: #fef2f2; color: #b91c1c; }
+  .cm-tag.dl-soon { background: #fef3c7; color: #b45309; }
+  .cm-tag.dl-normal { background: #eff6ff; color: #1d4ed8; }
+  .cm-tag.dl-done { background: #dcfce7; color: #15803d; }
+  .cm-tag.dl-expired { background: var(--color-surface-muted, #f1f5f9); color: var(--color-text-muted, #64748b); }
 
-    <div class="notice-hero">
-        <h1>⏰ Deadline Radar</h1>
-        <p>
-            Theo dõi các thông báo có hạn đăng ký hoặc nộp.
-            Hệ thống hỗ trợ nhắc trước 2 ngày, 1 ngày và 3 giờ.
-        </p>
+  .dl-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .dl-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: none;
+    background: #0f294a;
+    color: #fff !important;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .dl-btn-primary:hover { background: #1d4ed8; color: #fff !important; }
+  .dl-btn-soft {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--color-border, #cbd5e1);
+    background: var(--color-surface, #fff);
+    color: var(--color-text-muted, #475569) !important;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .dl-btn-soft:hover { background: var(--color-surface-muted, #f1f5f9); color: var(--color-text, #0f172a) !important; }
+  .dl-undo-btn {
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    font: inherit;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--color-text-muted, #64748b);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .dl-undo-btn:hover { color: var(--color-text, #0f172a); }
 
-        <div class="notice-actions">
-            <a class="notice-action" href="{% url 'notifications:list' %}">
-                ← Quay lại thông báo
-            </a>
-        </div>
-    </div>
+  html[data-theme="dark"] .cm-tabs a.active,
+  html[data-theme="dark"] .cm-tabs a:hover { background: #13284d; color: #93c5fd !important; }
+  html[data-theme="dark"] .cm-tag.dl-urgent { background: #450a0a; color: #fca5a5; }
+  html[data-theme="dark"] .cm-tag.dl-soon { background: #451a03; color: #fcd34d; }
+  html[data-theme="dark"] .cm-tag.dl-normal { background: #13284d; color: #93c5fd; }
+  html[data-theme="dark"] .cm-tag.dl-done { background: #12382a; color: #86efac; }
+  html[data-theme="dark"] .dl-btn-primary { background: #1d4ed8; }
+  html[data-theme="dark"] .dl-btn-primary:hover { background: #2563eb; }
+</style>
+{% endblock %}
 
-
-    <div class="notice-toolbar">
-        <div class="notice-toolbar-title">
-            DANH SÁCH HẠN CHÓT
-        </div>
-
-        <span class="notice-badge">
-            {{ deadlines|length }} hạn chót
-        </span>
-    </div>
-
-
-    {% for item in deadlines %}
-
-    <div class="deadline-card">
-
-        <div class="notice-meta">
-            <span class="notice-badge">
-                📌 Hạn chót
-            </span>
-        </div>
-
-        <h3>
-            <a href="{{ item.get_absolute_url }}">
-                {{ item.title }}
-            </a>
-        </h3>
-
-        <div class="deadline-info">
-            <span>
-                ⏰ {{ item.deadline_at|date:"d/m/Y H:i" }}
-            </span>
-
-            <span>
-                ♙ Đăng bởi {{ item.author }}
-            </span>
-        </div>
-
-        {% if item.pk in completed_ids %}
-
-            <span class="deadline-status">
-                ✓ Đã hoàn thành
-            </span>
-
-        {% else %}
-
-            <form method="post"
-                  action="{% url 'notifications:complete_deadline' item.pk %}"
-                  style="margin:0;">
-
-                {% csrf_token %}
-
-                <button type="submit" class="notice-action primary">
-                    ✓ Đánh dấu đã hoàn thành
-                </button>
-
-            </form>
-
-        {% endif %}
-
-    </div>
-
-    {% empty %}
-
-    <div class="notice-empty">
-        <div class="notice-empty-icon">🎉</div>
-        <h3>Không có hạn chót sắp tới</h3>
-        <p>
-            Hiện tại bạn không có thông báo nào cần hoàn thành.
-        </p>
-    </div>
-
-    {% endfor %}
-
+{% block announcement_content %}
+<div class="cm-hero">
+  <h1>Hạn chót của tôi</h1>
+  <p>Theo dõi hạn đăng ký, nộp bài · Tự động nhắc trước 2 ngày, 1 ngày và 3 giờ</p>
+  <a href="{% url 'notifications:preferences' %}" class="cm-hero-btn">Cài đặt nhắc hẹn →</a>
 </div>
 
+<div class="cm-box cm-bar">
+  <div class="cm-tabs" role="tablist" aria-label="Lọc hạn chót">
+    <a href="?tab=all" class="{% if current_tab == 'all' %}active{% endif %}">
+      <i class="bi bi-fire"></i> Sắp tới ({{ upcoming_count }})
+    </a>
+    <a href="?tab=pending" class="{% if current_tab == 'pending' %}active{% endif %}">
+      <i class="bi bi-hourglass-split"></i> Cần làm ({{ pending_count }})
+    </a>
+    <a href="?tab=done" class="{% if current_tab == 'done' %}active{% endif %}">
+      <i class="bi bi-check-circle"></i> Đã xong ({{ done_count }})
+    </a>
+    <a href="?tab=expired" class="{% if current_tab == 'expired' %}active{% endif %}">
+      <i class="bi bi-clock-history"></i> Đã quá hạn ({{ expired_count }})
+    </a>
+  </div>
+</div>
+
+{% for entry in deadline_items %}
+  {% with a=entry.announcement %}
+  <article class="cm-box cm-post dl-post urgency-{{ entry.urgency }}">
+    <div class="cm-badges">
+      <span class="cm-tag{% if a.kind == 'event' %} qa{% endif %}">{{ a.get_kind_display }}</span>
+      <span class="cm-tag dl-{{ entry.urgency }}">
+        <i class="bi {% if entry.is_done %}bi-check-circle-fill{% else %}bi-clock{% endif %}"></i>
+        {{ entry.remaining_label }}
+      </span>
+    </div>
+
+    <div class="cm-row">
+      {% if a.featured_image %}
+        <img src="{{ a.featured_image.url }}" alt="" class="cm-thumb">
+      {% else %}
+        <a class="cm-av" href="{{ a.author.get_absolute_url }}">
+          {% if a.author.avatar %}
+            <img src="{{ a.author.avatar.url }}" alt="">
+          {% else %}
+            {{ a.author.get_full_name|default:a.author.email|first|upper }}
+          {% endif %}
+        </a>
+      {% endif %}
+
+      <div style="flex:1; min-width:0;">
+        <h3 class="cm-title">
+          <a href="{{ a.get_absolute_url }}">{{ a.title }}</a>
+        </h3>
+        <div class="cm-meta">
+          <a href="{{ a.author.get_absolute_url }}">{{ a.author }}</a>
+          · {{ a.created_at|date:"d/m/Y H:i" }}
+        </div>
+        <p class="cm-exc">{{ a.body|striptags|truncatewords:28 }}</p>
+
+        {% if a.kind == "event" and a.event_datetime %}
+          <p class="cm-exc-meta"><i class="bi bi-calendar-event"></i> Diễn ra lúc: {{ a.event_time_display }}</p>
+        {% endif %}
+
+        <p class="cm-exc-meta{% if not entry.is_done and not entry.is_expired %} cm-exc-deadline{% endif %}">
+          <i class="bi bi-clock"></i>
+          {% if a.kind == "event" %}Hạn đăng ký:{% else %}Hạn chót:{% endif %}
+          {{ a.deadline_at|date:"d/m/Y H:i" }}
+        </p>
+      </div>
+    </div>
+
+    <div class="cm-foot">
+      <div class="dl-actions">
+        {% if entry.is_registered %}
+          <span class="cm-tag dl-done"><i class="bi bi-check-circle-fill"></i> Đã đăng ký sự kiện</span>
+        {% elif entry.is_done %}
+          <span class="cm-tag dl-done"><i class="bi bi-check-circle-fill"></i> Đã hoàn thành</span>
+          <form method="post" action="{% url 'notifications:uncomplete_deadline' a.pk %}" style="margin:0;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="dl-undo-btn">Hoàn tác</button>
+          </form>
+        {% elif entry.is_expired %}
+          <span class="cm-tag dl-expired"><i class="bi bi-x-circle"></i> Đã hết hạn</span>
+        {% elif a.kind == "event" %}
+          <a href="{% url 'announcements:register_event' a.pk %}" class="dl-btn-primary">
+            <i class="bi bi-pencil-square"></i> Đăng ký tham gia
+          </a>
+          <form method="post" action="{% url 'notifications:complete_deadline' a.pk %}" style="margin:0;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="dl-btn-soft" title="Đánh dấu xong để tắt nhắc hẹn">
+              <i class="bi bi-check2"></i> Đã xong
+            </button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'notifications:complete_deadline' a.pk %}" style="margin:0;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="dl-btn-primary">
+              <i class="bi bi-check2"></i> Đánh dấu hoàn thành
+            </button>
+          </form>
+        {% endif %}
+      </div>
+      <a href="{{ a.get_absolute_url }}" class="cm-more">Xem chi tiết →</a>
+    </div>
+  </article>
+  {% endwith %}
+{% empty %}
+  <div class="cm-box" style="text-align:center; padding:36px; color:var(--color-text-muted);">
+    {% if current_tab == 'pending' %}
+      Không còn hạn chót nào cần hoàn thành.
+    {% elif current_tab == 'done' %}
+      Chưa có hạn chót nào được đánh dấu hoàn thành.
+    {% elif current_tab == 'expired' %}
+      Không có hạn chót nào quá hạn gần đây.
+    {% else %}
+      Chưa có hạn chót nào sắp tới.
+    {% endif %}
+  </div>
+{% endfor %}
 {% endblock %}

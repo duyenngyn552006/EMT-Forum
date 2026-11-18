@@ -1,81 +1,166 @@
+{% extends "announcements/base_announcements.html" %}
+{% block title %}EMT Community - Thông báo{% endblock %}
 
-{% extends "base.html" %}
-{% block title %}Thông báo{% endblock %}
-{% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% block announcement_head %}
+<style>
+  .cm-hero { background: linear-gradient(110deg, #0b2545, #1e40af); color: #fff; border-radius: 16px; padding: 24px 28px; margin-bottom: 14px; }
+  .cm-hero h1 { margin: 0 0 6px; font-size: 1.55rem; color: #fff !important; }
+  .cm-hero p { margin: 0 0 12px; color: #dbeafe; font-size: .95rem; }
+  .cm-hero-btn { display: inline-block; background: #fff; color: #0f294a !important; font-weight: 700; font-size: .85rem; padding: 7px 16px; border-radius: 99px; text-decoration: none; border: none; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .cm-hero-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18); color: #0f294a !important; }
+  .cm-bar { padding: 10px 14px; }
+  .cm-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cm-tabs a { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 99px; font-size: .88rem; font-weight: 600; color: var(--color-text-muted, #475569); text-decoration: none; transition: background 0.15s ease, color 0.15s ease; }
+  .cm-tabs a.active, .cm-tabs a:hover { background: #eff6ff; color: #1d4ed8 !important; }
+  .cm-compose { display: flex; align-items: center; gap: 12px; }
+  .cm-av { overflow: hidden; }
+  .cm-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cm-fake-inp { flex: 1; background: var(--color-surface-muted, #f1f5f9); border-radius: 99px; padding: 10px 16px; color: var(--color-text-muted, #64748b); font-size: .92rem; text-decoration: none; transition: background 0.15s ease; }
+  .cm-fake-inp:hover { background: var(--color-surface-hover, #e2e8f0); color: var(--color-text, #0f172a); }
+
+  html[data-theme="dark"] .cm-tabs a.active,
+  html[data-theme="dark"] .cm-tabs a:hover { background: #13284d; color: #93c5fd !important; }
+</style>
 {% endblock %}
-{% block content %}
-<div class="card">
-    <h1>Thông tin / Thông báo</h1>
 
-    {% if user.is_authenticated and user.role in "bch,staff,lecturer" %}
-        <a class="btn" href="{% url 'announcements:create' %}">+ Đăng thông báo mới</a>
+{% block announcement_content %}
+<div class="cm-hero">
+  <h1>
+    {% if current_mine %}
+      Thông báo của tôi
+    {% elif current_registered %}
+      Sự kiện đã đăng ký
+    {% elif current_kind == 'official' %}
+      Thông tin học vụ
+    {% elif current_kind == 'event' %}
+      Sự kiện &amp; Phong trào
+    {% else %}
+      Thông báo Khoa EMT
     {% endif %}
-
-    <div class="filter-pills" style="margin-top:12px;">
-        <a href="?sort=new">Mới nhất</a>
-        <a href="?sort=activity">Hoạt động gần nhất</a>
-        <a href="?kind=official">Thông tin</a>
-        <a href="?kind=event">Sự kiện</a>
-        <a href="{% url 'announcements:list' %}">Tất cả</a>
-    </div>
+  </h1>
+  <p>
+    {% if current_mine %}
+      Quản lý các thông tin và sự kiện bạn đã đăng tải
+    {% elif current_registered %}
+      Các sự kiện và hoạt động phong trào bạn đã đăng ký tham gia
+    {% elif current_kind == 'official' %}
+      Thông tin chính thức · Học vụ · Quy định từ Khoa
+    {% elif current_kind == 'event' %}
+      Sự kiện · Hội thảo · Hoạt động phong trào sinh viên
+    {% else %}
+      Thông tin học vụ · Sự kiện · Hoạt động phong trào
+    {% endif %}
+  </p>
+  {% if can_post_announcement %}
+    <a href="{% url 'announcements:create' %}" class="cm-hero-btn">Đăng thông báo ngay →</a>
+  {% elif user.is_authenticated %}
+    <a href="{% url 'notifications:deadlines' %}" class="cm-hero-btn">Xem hạn chót →</a>
+  {% else %}
+    <a href="{% url 'account_login' %}" class="cm-hero-btn">Đăng nhập ngay →</a>
+  {% endif %}
 </div>
+
+<div class="cm-box cm-bar">
+  <div class="cm-tabs">
+    <a href="?sort=new{% if current_mine %}&mine=1{% endif %}{% if current_registered %}&registered=1{% endif %}" class="{% if current_sort != 'activity' and not current_kind and not current_has_deadline %}active{% endif %}">
+      <i class="bi bi-fire"></i> Mới nhất
+    </a>
+    <a href="?sort=activity{% if current_mine %}&mine=1{% endif %}{% if current_registered %}&registered=1{% endif %}{% if current_kind %}&kind={{ current_kind }}{% endif %}{% if current_has_deadline %}&has_deadline=1{% endif %}" class="{% if current_sort == 'activity' %}active{% endif %}">
+      <i class="bi bi-star"></i> Hoạt động gần nhất
+    </a>
+    <a href="?kind=official{% if current_mine %}&mine=1{% endif %}" class="{% if current_kind == 'official' and current_sort != 'activity' and not current_has_deadline %}active{% endif %}">
+      <i class="bi bi-megaphone"></i> Thông tin
+    </a>
+    <a href="?kind=event{% if current_mine %}&mine=1{% endif %}{% if current_registered %}&registered=1{% endif %}" class="{% if current_kind == 'event' and current_sort != 'activity' and not current_has_deadline %}active{% endif %}">
+      <i class="bi bi-calendar-event"></i> Sự kiện
+    </a>
+    <a href="?has_deadline=1{% if current_mine %}&mine=1{% endif %}{% if current_registered %}&registered=1{% endif %}{% if current_kind %}&kind={{ current_kind }}{% endif %}" class="{% if current_has_deadline and current_sort != 'activity' %}active{% endif %}">
+      <i class="bi bi-hourglass-split"></i> Có hạn chót
+    </a>
+  </div>
+</div>
+
+{% if can_post_announcement %}
+<div class="cm-box cm-compose">
+  <div class="cm-av">
+    {% if user.avatar %}
+      <img src="{{ user.avatar.url }}" alt="">
+    {% else %}
+      {{ user.get_full_name|default:user.email|first|upper }}
+    {% endif %}
+  </div>
+  <a href="{% url 'announcements:create' %}" class="cm-fake-inp">Bạn muốn đăng thông tin hoặc sự kiện mới nào?</a>
+  <a href="{% url 'announcements:create' %}" class="cm-btn-main" style="width:auto; padding:8px 16px;">
+    <i class="bi bi-send"></i> Đăng thông báo
+  </a>
+</div>
+{% endif %}
 
 {% for a in announcements %}
 <article class="cm-box cm-post{% if a.is_pinned %} pinned{% endif %}">
-    <div class="cm-badges">
-        {% if a.is_pinned %}
-            <span class="cm-tag pin"><i class="bi bi-pin-angle-fill"></i> Đã ghim</span>
-        {% endif %}
-        <span class="cm-tag">{{ a.get_kind_display }}</span>
-    </div>
+  <div class="cm-badges">
+    {% if a.is_pinned %}
+      <span class="cm-tag pin"><i class="bi bi-pin-angle-fill"></i> Đã ghim</span>
+    {% endif %}
+    <span class="cm-tag{% if a.kind == 'event' %} qa{% endif %}">{{ a.get_kind_display }}</span>
+    {% if a.status == "pending_review" %}
+      <span class="cm-tag" style="background:#fee2e2;color:#991b1b;">Chờ kiểm duyệt</span>
+    {% endif %}
+  </div>
 
-    <div class="cm-row">
-        {% if a.featured_image %}
-            <img src="{{ a.featured_image.url }}" alt="" class="cm-thumb">
+  <div class="cm-row">
+    {% if a.featured_image %}
+      <img src="{{ a.featured_image.url }}" alt="" class="cm-thumb">
+    {% else %}
+      <a class="cm-av" href="{{ a.author.get_absolute_url }}">
+        {% if a.author.avatar %}
+          <img src="{{ a.author.avatar.url }}" alt="">
         {% else %}
-            <a class="cm-av" href="{{ a.author.get_absolute_url }}">
-                {{ a.author.get_full_name|default:a.author.email|first|upper }}
-            </a>
+          {{ a.author.get_full_name|default:a.author.email|first|upper }}
         {% endif %}
+      </a>
+    {% endif %}
 
-        <div style="flex:1; min-width:0;">
-            <h3 class="cm-title">
-                <a href="{% url 'announcements:detail' a.pk %}">{{ a.title }}</a>
-            </h3>
-            <div class="cm-meta">
-                <a href="{{ a.author.get_absolute_url }}">{{ a.author }}</a>
-                · {{ a.created_at|date:"d/m/Y H:i" }}
-                {% if a.is_edited %} · <em>đã chỉnh sửa</em>{% endif %}
-            </div>
-            <p class="cm-exc">{{ a.body|striptags|truncatewords:28 }}</p>
+    <div style="flex:1; min-width:0;">
+      <h3 class="cm-title">
+        <a href="{% url 'announcements:detail' a.pk %}">{{ a.title }}</a>
+      </h3>
+      <div class="cm-meta">
+        <a href="{{ a.author.get_absolute_url }}">{{ a.author }}</a>
+        · {{ a.created_at|date:"d/m/Y H:i" }}
+        {% if a.is_edited %} · <em>đã chỉnh sửa</em>{% endif %}
+      </div>
+      <p class="cm-exc">{{ a.body|striptags|truncatewords:28 }}</p>
 
-            {% if a.kind == "event" and a.event_datetime %}
-                <p class="cm-exc-meta"><i class="bi bi-calendar-event"></i> Diễn ra lúc: {{ a.event_time_display }}</p>
-            {% endif %}
+      {% if a.kind == "event" and a.event_datetime %}
+        <p class="cm-exc-meta"><i class="bi bi-calendar-event"></i> Diễn ra lúc: {{ a.event_time_display }}</p>
+      {% endif %}
 
-            {% if a.deadline_at %}
-                <p class="cm-exc-meta cm-exc-deadline">
-                    <i class="bi bi-clock"></i>
-                    {% if a.kind == "event" %}Hạn đăng ký:{% else %}Hạn chót:{% endif %}
-                    {{ a.deadline_at|date:"d/m/Y H:i" }}
-                </p>
-            {% endif %}
-        </div>
+      {% if a.deadline_at %}
+        <p class="cm-exc-meta cm-exc-deadline">
+          <i class="bi bi-clock"></i>
+          {% if a.kind == "event" %}Hạn đăng ký:{% else %}Hạn chót:{% endif %}
+          {{ a.deadline_at|date:"d/m/Y H:i" }}
+        </p>
+      {% endif %}
     </div>
+  </div>
 
-    <div class="cm-foot">
-        <div class="cm-stats">
-            <span title="Lượt xem"><i class="bi bi-eye"></i> {{ a.view_count }}</span>
-            <a href="{% url 'announcements:detail' a.pk %}" title="Thả cảm xúc"><i class="bi bi-hand-thumbs-up"></i> {{ a.like_count }}</a>
-            <a href="{% url 'announcements:detail' a.pk %}#comments" title="Bình luận"><i class="bi bi-chat-dots"></i> {{ a.comment_count }}</a>
-        </div>
-        <a href="{% url 'announcements:detail' a.pk %}" class="cm-more">Xem chi tiết →</a>
+  <div class="cm-foot">
+    <div class="cm-stats">
+      <span title="Lượt xem"><i class="bi bi-eye"></i> {{ a.view_count }}</span>
+      <a href="{% url 'announcements:detail' a.pk %}" title="Thả cảm xúc"><i class="bi bi-hand-thumbs-up"></i> {{ a.like_count }}</a>
+      <a href="{% url 'announcements:detail' a.pk %}#comments" title="Bình luận"><i class="bi bi-chat-dots"></i> {{ a.comment_count }}</a>
+      {% if a.kind == "event" %}
+        <span title="Số người đã đăng ký"><i class="bi bi-people"></i> {{ a.registration_count }} đăng ký</span>
+      {% endif %}
     </div>
+    <a href="{% url 'announcements:detail' a.pk %}" class="cm-more">Xem chi tiết →</a>
+  </div>
 </article>
 {% empty %}
 <div class="cm-box" style="text-align:center; padding:36px; color:var(--color-text-muted);">
-    Chưa có thông báo nào.
+  Chưa có thông báo nào.
 </div>
 {% endfor %}
 

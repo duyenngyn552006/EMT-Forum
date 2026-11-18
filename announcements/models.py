@@ -88,6 +88,12 @@ class EventRegistration(models.Model):
         on_delete=models.CASCADE,
         related_name="event_registrations"
     )
+    full_name = models.CharField("Họ và tên", max_length=150, blank=True, default="")
+    student_id = models.CharField("Mã số sinh viên / CB", max_length=30, blank=True, default="")
+    class_name = models.CharField("Lớp", max_length=50, blank=True, default="")
+    email = models.EmailField("Email liên hệ", blank=True, default="")
+    phone = models.CharField("Số điện thoại", max_length=20, blank=True, default="")
+    note = models.TextField("Ghi chú", blank=True, default="")
     registered_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -100,4 +106,11 @@ class EventRegistration(models.Model):
         ordering = ["-registered_at"]
 
     def __str__(self):
-        return f"{self.user} - {self.announcement.title}"
+        return f"{self.full_name or self.user} - {self.announcement.title}"
+
+    @property
+    def title(self):
+        return f"Đăng ký sự kiện: {self.announcement.title}"
+
+    def get_absolute_url(self):
+        return f"{reverse('announcements:detail', args=[self.announcement_id])}#registrations"

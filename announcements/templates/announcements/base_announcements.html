@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  .cm-grid { display: grid; grid-template-columns: 250px 1fr; gap: 22px; align-items: start; margin-top: 8px; }
+  .cm-main { min-width: 0; }
+  .cm-side { position: sticky; top: 84px; }
+  .cm-btn-main { box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; background: #0f294a; color: #fff !important; font-weight: 600; border-radius: 99px; text-decoration: none; transition: background 0.15s ease; }
+  .cm-btn-main:hover { background: #1d4ed8; color: #fff !important; }
+  .cm-lbl { font-size: .74rem; font-weight: 700; color: var(--color-text-muted, #64748b); text-transform: uppercase; margin: 16px 0 6px 8px; }
+  .cm-lbl:first-child { margin-top: 2px; }
+  .cm-nav { list-style: none; padding: 0; margin: 0; }
+  .cm-nav a { display: flex; align-items: center; gap: 9px; padding: 8px 12px; border-radius: 9px; color: var(--color-text, #334155); text-decoration: none; font-size: .92rem; transition: background 0.15s ease, color 0.15s ease; }
+  .cm-nav a:hover { background: var(--color-surface-muted, #f1f5f9); }
+  .cm-nav a.active { background: #e0edff; color: #0f294a !important; font-weight: 700; }
+
+  .cm-main .pd-breadcrumb { margin-top: 0; }
+  .cm-main .pd-card,
+  .cm-main .pd-comments-card { max-width: none; margin-left: 0; margin-right: 0; }
+  .cm-main .composer-container { max-width: none; margin: 0; padding: 0; }
+  .cm-main .composer-layout { grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; }
+
+  html[data-theme="dark"] .cm-btn-main { background: #1d4ed8; }
+  html[data-theme="dark"] .cm-btn-main:hover { background: #2563eb; }
+  html[data-theme="dark"] .cm-nav a.active { background: #13284d; color: #93c5fd !important; }
+
+  @media (max-width: 1120px) {
+    .cm-main .composer-layout { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 820px) {
+    .cm-grid { grid-template-columns: 1fr; }
+    .cm-side { position: static; }
+  }
+</style>
+{% block announcement_head %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="cm-grid">
+  <aside class="cm-box cm-side" aria-label="Điều hướng thông báo">
+    {% if user.is_authenticated and user.is_superuser or user.is_authenticated and user.role in "bch,staff,lecturer" %}
+      <a class="cm-btn-main" href="{% url 'announcements:create' %}"><i class="bi bi-pencil"></i> Đăng thông báo mới</a>
+
+      <div class="cm-lbl">Quản lý</div>
+      <ul class="cm-nav">
+        <li>
+          <a href="{% url 'announcements:list' %}" class="{% if request.resolver_match.app_name == 'announcements' and request.resolver_match.url_name == 'list' and not current_mine and not current_registered and not current_kind and not current_has_deadline %}active{% endif %}">
+            <i class="bi bi-grid"></i> Tất cả thông báo
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'announcements:list' %}?mine=1" class="{% if current_mine %}active{% endif %}">
+            <i class="bi bi-person"></i> Thông báo của tôi
+          </a>
+        </li>
+      </ul>
+    {% else %}
+      <div class="cm-lbl">Cá nhân</div>
+      <ul class="cm-nav">
+        <li>
+          <a href="{% url 'announcements:list' %}" class="{% if request.resolver_match.app_name == 'announcements' and request.resolver_match.url_name == 'list' and not current_mine and not current_registered and not current_kind and not current_has_deadline %}active{% endif %}">
+            <i class="bi bi-grid"></i> Tất cả thông báo
+          </a>
+        </li>
+        {% if user.is_authenticated %}
+          <li>
+            <a href="{% url 'announcements:list' %}?registered=1" class="{% if current_registered %}active{% endif %}">
+              <i class="bi bi-calendar-check"></i> Sự kiện đã đăng ký
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'notifications:deadlines' %}" class="{% if request.resolver_match.url_name == 'deadlines' %}active{% endif %}">
+              <i class="bi bi-alarm"></i> Hạn chót của tôi
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    {% endif %}
+
+    <div class="cm-lbl">Phân loại</div>
+    <ul class="cm-nav">
+      <li>
+        <a href="{% url 'announcements:list' %}?kind=official" class="{% if current_kind == 'official' or announcement and announcement.kind == 'official' %}active{% endif %}">
+          <i class="bi bi-folder2"></i> Thông tin học vụ
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'announcements:list' %}?kind=event" class="{% if current_kind == 'event' or announcement and announcement.kind == 'event' %}active{% endif %}">
+          <i class="bi bi-folder2"></i> Sự kiện &amp; Phong trào
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <div class="cm-main">
+    {% block announcement_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}
