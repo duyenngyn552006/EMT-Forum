@@ -1,124 +1,154 @@
 {% extends "base.html" %}
-{% block title %}Đăng bài mới | Diễn đàn EMT{% endblock %}
+{% block title %}{% if object %}Chỉnh sửa bài viết{% else %}Đăng bài mới{% endif %} | Diễn đàn EMT{% endblock %}
 
 {% block extra_head %}
 {{ form.media }}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<style>
-.pc-container{max-width:760px;margin:24px auto;padding:0 16px}
-.pc-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,.06)}
-.pc-hero{background:#0b2545;color:#fff;padding:20px 24px}
-.pc-hero h2{margin:0 0 4px;font-size:1.15rem;font-weight:700}
-.pc-hero p{margin:0;font-size:.85rem;color:#cbd5e1}
-.pc-body-content{padding:24px}
-.pc-form-group{margin-bottom:18px}
-.pc-label{display:block;font-weight:600;font-size:.88rem;color:#1e293b;margin-bottom:6px}
-.pc-input, .pc-select{width:100%;padding:10px 14px;border:1px solid #cbd5e1;border-radius:10px;font-size:.92rem;color:#0f172a;background:#fff;outline:none;box-sizing:border-box}
-.pc-input:focus, .pc-select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-
-/* Khối checkbox câu hỏi cần giải đáp */
-.pc-question-box{background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;cursor:pointer}
-.pc-question-box input[type="checkbox"]{width:20px;height:20px;accent-color:#d97706;cursor:pointer}
-.pc-question-box label{font-weight:600;font-size:.92rem;color:#92400e;cursor:pointer;margin:0}
-
-.pc-box-section{border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:16px;background:#fff}
-.pc-box-title{font-weight:700;font-size:.9rem;color:#1e293b;display:flex;align-items:center;gap:8px;margin-bottom:10px}
-
-/* Thu gọn khung tải ảnh đại diện thành một góc nhỏ gọn gàng */
-.pc-upload-box{border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;background:#f8fafc;display:flex;align-items:center;gap:14px;max-width:420px}
-.pc-upload-box i{font-size:1.6rem;color:#2563eb;flex-shrink:0}
-.pc-upload-content{flex:1;font-size:0.83rem;color:#64748b}
-.pc-upload-content span{display:block;font-weight:500;color:#334155;margin-bottom:2px}
-.pc-upload-box input[type="file"]{font-size:0.82rem;color:#334155;width:100%}
-
-.pc-actions{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0}
-.pc-btn{padding:10px 22px;border-radius:99px;font-weight:600;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .2s}
-.pc-btn-primary{background:#0b2545;color:#fff;border:none}
-.pc-btn-primary:hover{background:#1d4ed8}
-.pc-btn-secondary{background:transparent;color:#64748b;border:none}
-.pc-btn-secondary:hover{color:#0f172a}
-</style>
 {% endblock %}
 
 {% block content %}
-<div class="pc-container">
-  <div class="pc-card">
-    <div class="pc-hero">
-      <h2 style="color: #ffffff !important; ">Đăng bài mới</h2>
-      <p>Không gian chia sẻ kiến thức, đặt câu hỏi và kết nối sinh viên.</p>
-    </div>
+<div class="composer-container">
+  <div class="composer-layout">
+    <div class="composer-card">
+      <div class="composer-hero">
+        <h2 style="color: #ffffff !important;">{% if object %}Chỉnh sửa bài viết{% else %}Đăng bài mới{% endif %}</h2>
+        <p>Không gian chia sẻ kiến thức, đặt câu hỏi và kết nối sinh viên.</p>
+      </div>
 
-    <div class="pc-body-content">
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+      <div class="composer-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <ul class="composer-errors" style="margin-bottom:14px;">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
 
-        <!-- Chuyên mục -->
-        <div class="pc-form-group">
-          <label class="pc-label">Chuyên mục</label>
-          {{ form.category }}
-        </div>
-
-        <!-- Tiêu đề -->
-        <div class="pc-form-group">
-          <label class="pc-label">Tiêu đề bài viết</label>
-          {{ form.title }}
-        </div>
-
-        <!-- Checkbox đánh dấu câu hỏi cần giải đáp -->
-        {% if form.is_question %}
-        <div class="pc-question-box" onclick="const cb=this.querySelector('input[type=checkbox]');if(event.target!==cb)cb.checked=!cb.checked;">
-          {{ form.is_question }}
-          <div>
-            <div style="font-weight:700;">Đánh dấu là câu hỏi cần giải đáp</div>
-            <div style="font-size:0.8rem;color:#b45309;font-weight:normal;">Bài viết sẽ được hiển thị với trạng thái hỏi đáp để cộng đồng hỗ trợ giải đáp.</div>
+          <!-- Chuyên mục -->
+          <div class="composer-field">
+            <label class="composer-label" for="{{ form.category.id_for_label }}">Chuyên mục</label>
+            {{ form.category }}
+            {% if form.category.errors %}<ul class="composer-errors">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
           </div>
-        </div>
-        {% endif %}
 
-        <!-- Nội dung -->
-        <div class="pc-form-group">
-          <label class="pc-label">Nội dung</label>
-          {{ form.body }}
-        </div>
+          <!-- Tiêu đề -->
+          <div class="composer-field">
+            <label class="composer-label" for="{{ form.title.id_for_label }}">Tiêu đề bài viết</label>
+            {{ form.title }}
+            {% if form.title.errors %}<ul class="composer-errors">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
 
-        <!-- Ảnh đại diện (đã thu gọn một góc nhỏ) -->
-        <div class="pc-form-group">
-          <label class="pc-label">Ảnh đại diện</label>
-          <div class="pc-upload-box">
-            <i class="bi bi-cloud-arrow-up"></i>
-            <div class="pc-upload-content">
-              <span>Tải ảnh lên hoặc chọn tệp</span>
+          <!-- Checkbox đánh dấu câu hỏi cần giải đáp -->
+          {% if form.is_question %}
+          <div class="composer-question-box" onclick="const cb=this.querySelector('input[type=checkbox]');if(event.target!==cb)cb.checked=!cb.checked;">
+            {{ form.is_question }}
+            <div>
+              <div class="composer-question-title">Đánh dấu là câu hỏi cần giải đáp</div>
+              <div class="composer-question-sub">Bài viết sẽ được hiển thị với trạng thái hỏi đáp để cộng đồng hỗ trợ giải đáp.</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Nội dung -->
+          <div class="composer-field">
+            <label class="composer-label" for="{{ form.body.id_for_label }}">Nội dung</label>
+            {{ form.body }}
+            {% if form.body.errors %}<ul class="composer-errors">{% for e in form.body.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- Khung Ảnh đại diện (mở khi bấm ở thanh bên) -->
+          <div class="composer-panel" id="panel-image" hidden data-has-initial="{% if object and object.featured_image %}1{% endif %}">
+            <div class="composer-panel-header">
+              <span class="composer-panel-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>Ảnh đại diện bài viết</span></span>
+              <button type="button" class="composer-panel-close" title="Thu gọn" aria-label="Thu gọn">&times;</button>
+            </div>
+            <div class="composer-upload-box">
               {{ form.featured_image }}
             </div>
+            {% if form.featured_image.errors %}<ul class="composer-errors">{% for e in form.featured_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- Khung Tài liệu đính kèm (mở khi bấm ở thanh bên) -->
+          {% if document_formset %}
+          <div class="composer-panel" id="panel-doc" hidden data-has-initial="{% if document_formset.initial_form_count > 0 %}1{% endif %}">
+            <div class="composer-panel-header">
+              <span class="composer-panel-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><span>Tài liệu đính kèm</span></span>
+              <button type="button" class="composer-panel-close" title="Thu gọn" aria-label="Thu gọn">&times;</button>
+            </div>
+            {% include "interactions/_document_formset.html" %}
+          </div>
+          {% endif %}
+
+          <!-- Khung Bình chọn (mở khi bấm ở thanh bên) -->
+          {% if not object and poll_form %}
+          <div class="composer-panel" id="panel-poll" hidden>
+            <div class="composer-panel-header">
+              <span class="composer-panel-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Tạo bình chọn</span></span>
+              <button type="button" class="composer-panel-close" title="Thu gọn" aria-label="Thu gọn">&times;</button>
+            </div>
+            {% if poll_form.non_field_errors %}<ul class="composer-errors">{% for e in poll_form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            {% for field in poll_form %}
+              <div class="composer-field" style="margin-bottom:12px;">
+                <label class="composer-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<ul class="composer-errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Nút hành động -->
+          <div class="composer-actions">
+            <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'forum:post_list' %}{% endif %}" class="btn btn-secondary">Hủy</a>
+            <button type="submit" class="btn">{% if object %}Lưu thay đổi{% else %}Đăng bài{% endif %}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <aside class="composer-sidebar" aria-label="Tiện ích hỗ trợ viết bài">
+      <!-- 1. Quy tắc cộng đồng lên đầu -->
+      <div class="composer-side-card">
+        <h3 class="composer-side-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Quy tắc cộng đồng</span></h3>
+        <ul class="composer-tips-list">
+          <li><span class="composer-tip-bullet">•</span><span>Trao đổi văn minh, tôn trọng giảng viên và sinh viên Khoa TMĐT.</span></li>
+          <li><span class="composer-tip-bullet">•</span><span>Chọn đúng chuyên mục và đặt tiêu đề rõ ràng, đúng nội dung.</span></li>
+          <li><span class="composer-tip-bullet">•</span><span>Không đăng nội dung quảng cáo, spam hoặc vi phạm quy chế học thuật.</span></li>
+        </ul>
+      </div>
+
+      <!-- 2. Thêm vào bài viết của bạn -->
+      <div class="composer-side-card">
+        <h3 class="composer-side-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Thêm vào bài viết của bạn</span></h3>
+        <div class="composer-add-bar">
+          <div class="composer-add-chips">
+            <button type="button" class="composer-chip" data-composer-target="panel-image">
+              <span class="composer-chip-left"><span class="chip-icon"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span><span>Ảnh đại diện</span></span>
+              <span class="composer-chip-status">+ Thêm</span>
+            </button>
+            {% if document_formset %}
+            <button type="button" class="composer-chip" data-composer-target="panel-doc">
+              <span class="composer-chip-left"><span class="chip-icon"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><span>Tài liệu</span></span>
+              <span class="composer-chip-status">+ Thêm</span>
+            </button>
+            {% endif %}
+            {% if not object and poll_form %}
+            <button type="button" class="composer-chip" data-composer-target="panel-poll">
+              <span class="composer-chip-left"><span class="chip-icon"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span>Bình chọn</span></span>
+              <span class="composer-chip-status">+ Thêm</span>
+            </button>
+            {% endif %}
           </div>
         </div>
+      </div>
 
-        <!-- Tài liệu đính kèm -->
-        <div class="pc-box-section">
-          <div class="pc-box-title"><i class="bi bi-paperclip" style="color:#2563eb;"></i> Tài liệu đính kèm <span style="font-weight:400;font-size:0.78rem;color:#64748b;margin-left:auto;">Không bắt buộc</span></div>
-          {% include "interactions/_document_formset.html" %}
-        </div>
-
-        <!-- Bình chọn -->
-        {% if not object and poll_form %}
-        <div class="pc-box-section">
-          <div class="pc-box-title"><i class="bi bi-bar-chart-fill" style="color:#2563eb;"></i> Tạo bình chọn</div>
-          {% for field in poll_form %}
-            <div class="pc-form-group" style="margin-bottom:10px;">
-              <label class="pc-label" style="font-size:0.82rem;color:#64748b;">{{ field.label }}</label>
-              {{ field }}
-            </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
-        <!-- Nút hành động -->
-        <div class="pc-actions">
-          <a href="{% url 'forum:post_list' %}" class="pc-btn pc-btn-secondary">Hủy</a>
-          <button type="submit" class="pc-btn pc-btn-primary"><i class="bi bi-send-fill"></i> Đăng bài</button>
-        </div>
-      </form>
-    </div>
+      <!-- 3. Mẹo viết bài hiệu quả -->
+      <div class="composer-side-card">
+        <h3 class="composer-side-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg><span>Mẹo viết bài hiệu quả</span></h3>
+        <ul class="composer-tips-list">
+          <li><span class="composer-tip-bullet">•</span><span>Tiêu đề ngắn gọn, nêu đúng trọng tâm giúp mọi người dễ tìm và hỗ trợ nhanh hơn.</span></li>
+          <li><span class="composer-tip-bullet">•</span><span>Cần giải đáp bài tập hoặc học vụ? Hãy tick vào ô <strong>Đánh dấu là câu hỏi</strong>.</span></li>
+          <li><span class="composer-tip-bullet">•</span><span>Sử dụng các nút ở mục <strong>Thêm vào bài viết</strong> phía trên để đính kèm ảnh, link Drive hoặc tạo bình chọn.</span></li>
+        </ul>
+      </div>
+    </aside>
   </div>
 </div>
 {% endblock %}

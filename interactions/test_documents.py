@@ -206,7 +206,7 @@ class GroupDocumentTests(TestCase):
     def test_member_posts_question_with_file_and_leader_can_download_while_pending(self):
         self.client.force_login(self.member)
         self.client.post(reverse("groups:post_create", args=[self.group.slug]), {
-            "title": "Cau hoi nhom", "body": "<p>Loi code</p>",
+            "title": "Cau hoi nhom", "category": "discussion", "body": "<p>Loi code</p>",
             "documents-TOTAL_FORMS": "1", "documents-INITIAL_FORMS": "0",
             "documents-MIN_NUM_FORMS": "0", "documents-MAX_NUM_FORMS": "10",
             "documents-0-title": "loi.py", "documents-0-file": _upload("loi.py", b"x = 1/0"),

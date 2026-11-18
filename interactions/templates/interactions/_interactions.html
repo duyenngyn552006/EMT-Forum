@@ -97,16 +97,18 @@
             }
         });
 
-        // Tương tác bài viết không tải lại trang (AJAX Reaction)
-        wrap.addEventListener('submit', function (e) {
+        // Tương tác bài viết không tải lại trang (AJAX Reaction - hỗ trợ cả form trong .fb-rx-dock)
+        document.addEventListener('submit', function (e) {
             var form = e.target;
-            if (!form || form.tagName !== 'FORM') return;
+            if (!form || form.tagName !== 'FORM' || !form.matches('.reaction-wrap form, .fb-rx-dock form')) return;
             e.preventDefault();
 
             // Đóng thanh cảm xúc ngay lập tức khi người dùng click chọn
             wrap.classList.add('picker-closed');
             wrap.classList.remove('open');
-            if (document.activeElement && wrap.contains(document.activeElement)) {
+            var reactSlot = document.getElementById('pdReactSlot');
+            if (reactSlot) reactSlot.classList.remove('open');
+            if (document.activeElement && (wrap.contains(document.activeElement) || (reactSlot && reactSlot.contains(document.activeElement)))) {
                 document.activeElement.blur();
             }
 
@@ -146,12 +148,12 @@
                 var rx = rxMap[data.reaction] || ['👍', 'Thích'];
                 var emoji = data.emoji || rx[0];
                 var label = data.label || rx[1];
-                var countHtml = (data.count && data.count > 0) ? '<span class="count">' + data.count + '</span>' : '';
+                var totalCount = data.count || 0;
+                var countHtml = totalCount > 0 ? '<span class="count">' + totalCount + '</span>' : '';
                 btn.innerHTML = emoji + ' ' + countHtml + ' ' + label;
 
-                // Cập nhật trạng thái active trong bảng chọn emoji
-                var pickBtns = wrap.querySelectorAll('.reaction-pick');
-                pickBtns.forEach(function (pBtn) {
+                // Cập nhật trạng thái active trong bảng chọn emoji (cả trong wrap và trong .fb-rx-dock)
+                document.querySelectorAll('.reaction-wrap .reaction-pick, .fb-rx-dock .rx-popup-btn').forEach(function (pBtn) {
                     var pForm = pBtn.closest('form');
                     var pInput = pForm ? pForm.querySelector('input[name="reaction"]') : null;
                     if (pInput && data.liked && pInput.value === data.reaction) {
@@ -160,9 +162,20 @@
                         pBtn.classList.remove('active');
                     }
                 });
+
+                // Cập nhật trực tiếp số lượng & icon ở thanh footer bài viết (không cần reload)
+                var pdLikeCount = document.getElementById('pdLikeCount');
+                if (pdLikeCount) pdLikeCount.textContent = totalCount;
+                var pdRxTotal = document.querySelector('.pd-rx-total');
+                if (pdRxTotal) pdRxTotal.textContent = totalCount;
+                var pdRxIcons = document.querySelector('.pd-rx-icons');
+                if (pdRxIcons) pdRxIcons.textContent = data.liked ? emoji : '👍';
+                var pdRxSum = document.querySelector('.pd-rx-summary');
+                if (pdRxSum) pdRxSum.classList.toggle('has-reacted', !!data.liked);
+
+                document.dispatchEvent(new CustomEvent('emt:reaction-updated', { detail: data }));
             })
-            .catch(function (err) {
-                // Fallback nếu có lỗi mạng
+            .catch(function () {
                 form.submit();
             });
         });
@@ -209,7 +222,10 @@
                             </button>
                         {% endif %}
                         {% if user.is_authenticated and user != comment.author %}
-                            <a class="reply-toggle-btn danger-text" style="text-decoration:none;" href="{% url 'moderation:create_report' 'comment' comment.pk %}">🚩 Báo cáo</a>
+                            <a class="reply-toggle-btn danger-text" style="text-decoration:none;" href="{% url 'moderation:create_report' 'comment' comment.pk %}">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                                Báo cáo
+                            </a>
                         {% endif %}
                         {% if model_key == "forumpost" and can_accept_answer and object.is_question and comment.status == "published" %}
                             <form method="post" action="{% url 'forum:accept_answer' object.pk comment.pk %}" style="display:inline;">
@@ -254,31 +270,36 @@
                                 <div class="comment-item">
                                     <a class="list-avatar" href="{{ reply.author.get_absolute_url }}">{{ reply.author.get_full_name|default:reply.author.email|first|upper }}</a>
                                     <div class="comment-main">
-                                        <div class="comment-bubble">
+                                        <div class="comment-bubble" id="comment-bubble-{{ reply.pk }}">
                                             <span class="comment-author"><a class="author-link" href="{{ reply.author.get_absolute_url }}">{{ reply.author }}</a></span>
                                             <span class="comment-time">{{ reply.created_at|date:"d/m/Y H:i" }}{% if reply.is_edited %} · đã chỉnh sửa{% endif %}</span>
                                             {% if reply.status == "pending_review" %}<span class="status-tag">Chờ kiểm duyệt</span>{% endif %}
                                             <p class="comment-body">{{ reply.body }}</p>
                                         </div>
-                                        {% if user.is_authenticated and user != reply.author %}
+                                        {% if user.is_authenticated or user == reply.author or user.role == "staff" %}
                                             <div class="comment-actions-row">
-                                                <a class="reply-toggle-btn danger-text" style="text-decoration:none;" href="{% url 'moderation:create_report' 'comment' reply.pk %}">🚩 Báo cáo</a>
+                                                {% if user.is_authenticated %}
+                                                    <button type="button" class="reply-toggle-btn" onclick="toggleReplyForm({{ comment.pk }}, '@{{ reply.author|escapejs }}')">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 14-5-5 5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+                                                        Trả lời
+                                                    </button>
+                                                {% endif %}
+                                                {% if user == reply.author or user.role == "staff" %}
+                                                    <button type="button" class="reply-toggle-btn" onclick="toggleEditForm({{ reply.pk }})">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                                        Sửa
+                                                    </button>
+                                                    <form method="post" action="{% url 'interactions:delete_comment' reply.pk %}" style="display:inline;" onsubmit="return confirm('Xóa bình luận này?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="reply-toggle-btn danger-text">
+                                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                                                            Xóa
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
                                             </div>
                                         {% endif %}
                                         {% if user == reply.author or user.role == "staff" %}
-                                            <div class="comment-actions-row">
-                                                <button type="button" class="reply-toggle-btn" onclick="toggleEditForm({{ reply.pk }})">
-                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                                                    Sửa
-                                                </button>
-                                                <form method="post" action="{% url 'interactions:delete_comment' reply.pk %}" style="display:inline;" onsubmit="return confirm('Xóa bình luận này?');">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="reply-toggle-btn danger-text">
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
-                                                        Xóa
-                                                    </button>
-                                                </form>
-                                            </div>
                                             <form method="post" action="{% url 'interactions:edit_comment' reply.pk %}" class="reply-form" id="edit-form-{{ reply.pk }}" hidden>
                                                 {% csrf_token %}
                                                 <div style="flex:1;">
@@ -304,7 +325,7 @@
                             <div style="flex:1; position:relative;">
                                 <textarea name="body" rows="2" placeholder="Viết trả lời {{ comment.author }}..." required class="js-mention-input"></textarea>
                                 <div class="comment-composer-actions">
-                                    <button class="btn btn-secondary" type="button" onclick="toggleReplyForm({{ comment.pk }})" style="padding:5px 12px; font-size:13px; margin-right:6px;">Hủy</button>
+                                    <button class="btn btn-secondary" type="button" onclick="cancelReplyForm({{ comment.pk }})" style="padding:5px 12px; font-size:13px; margin-right:6px;">Hủy</button>
                                     <button class="btn" type="submit" style="padding:5px 12px; font-size:13px;">Gửi trả lời</button>
                                 </div>
                             </div>
@@ -319,14 +340,58 @@
 </div>
 
 <script>
-    function toggleReplyForm(commentId) {
+    function toggleReplyForm(commentId, mentionName) {
         var form = document.getElementById('reply-form-' + commentId);
-        if (form) {
-            form.hidden = !form.hidden;
-            if (!form.hidden) {
-                var textarea = form.querySelector('textarea');
-                if (textarea) { textarea.focus(); }
+        if (!form) return;
+        var textarea = form.querySelector('textarea');
+        var lastMention = textarea ? (textarea.dataset.lastMention || '') : '';
+
+        if (mentionName) {
+            // Bấm Trả lời từ bình luận con: mở form và thay tag cũ (nếu có) bằng @tên bình luận con
+            form.hidden = false;
+            if (textarea) {
+                var val = textarea.value;
+                if (lastMention && val.startsWith(lastMention + ' ')) {
+                    val = val.slice(lastMention.length + 1);
+                } else if (lastMention && val.startsWith(lastMention)) {
+                    val = val.slice(lastMention.length);
+                }
+                if (!val.startsWith(mentionName)) {
+                    val = mentionName + ' ' + val.trimStart();
+                }
+                textarea.value = val;
+                textarea.dataset.lastMention = mentionName;
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
             }
+        } else {
+            // Bấm Trả lời từ bình luận cha: xóa tag bình luận con cũ (nếu trước đó đang trả lời con)
+            if (lastMention && textarea) {
+                if (textarea.value.startsWith(lastMention + ' ')) {
+                    textarea.value = textarea.value.slice(lastMention.length + 1);
+                } else if (textarea.value.startsWith(lastMention)) {
+                    textarea.value = textarea.value.slice(lastMention.length);
+                }
+                delete textarea.dataset.lastMention;
+                form.hidden = false;
+            } else {
+                form.hidden = !form.hidden;
+            }
+            if (!form.hidden && textarea) {
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
+        }
+    }
+
+    function cancelReplyForm(commentId) {
+        var form = document.getElementById('reply-form-' + commentId);
+        if (!form) return;
+        form.hidden = true;
+        var textarea = form.querySelector('textarea');
+        if (textarea) {
+            textarea.value = '';
+            delete textarea.dataset.lastMention;
         }
     }
 

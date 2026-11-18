@@ -11,6 +11,10 @@
 </nav>
 {% endblock %}
 {% block title %}{{ group.name }}{% endblock %}
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
 {% block group_content %}
 <style>
     .recruit-box { background: #f4f8ff; border: 1px solid #c7d9f7; border-radius: 8px; padding: 12px 14px; margin: 10px 0 14px; }
@@ -193,86 +197,74 @@
     </a>
 </div>
     {% for p in posts %}
-    <div class="list-card">
-        {% if p.featured_image %}
-            <img src="{{ p.featured_image.url }}" alt="" class="list-thumb">
-        {% else %}
-            <a class="list-avatar" href="{{ p.author.get_absolute_url }}">
-                {{ p.author.get_full_name|default:p.author.email|first|upper }}
-            </a>
-        {% endif %}
 
-        <div class="list-body">
-            <div class="list-meta">
-                {% if p.is_pinned and p.status == "published" %}
-                    <span class="badge">📌 Đã ghim</span>
-                {% endif %}
-
-                {% if p.status == "pending_review" %}
-                    <span class="status-tag">Chờ kiểm duyệt</span>
-                {% endif %}
-
-                <span>
-                    <a class="author-link" href="{{ p.author.get_absolute_url }}">
-                        {{ p.author }}
-                    </a>
-                </span>
-                <span>· {{ p.created_at|date:"d/m/Y H:i" }}</span>
-
-                {% if p.is_edited %}
-                    <span>· <em>đã chỉnh sửa</em></span>
-                {% endif %}
-
-                <span>· 👁️ {{ p.view_count }}</span>
-                <span>· 💬 {{ p.comment_count }}</span>
-                <span>· 👍 {{ p.like_count }}</span>
-            </div>
-
-            <h3 class="list-title">
-                <a href="{% url 'groups:post_detail' group.slug p.pk %}">
-                    {{ p.title }}
-                </a>
-            </h3>
-
-            <p class="list-excerpt">
-                {{ p.body|striptags|truncatewords:28 }}
-            </p>
-
-            {% if is_manager and p.status == "published" %}
-                <form method="post"
-                      action="{% url 'groups:post_pin' group.slug p.pk %}">
-                    {% csrf_token %}
-
-                    {% if p.is_pinned %}
-                        <button type="submit" name="action" value="unpin"
-                                class="btn btn-secondary">
-                            Bỏ ghim
-                        </button>
-                    {% else %}
-                        <button type="submit" name="action" value="pin"
-                                class="btn btn-secondary">
-                            Ghim bài
-                        </button>
-                    {% endif %}
-                </form>
+    <article class="cm-box cm-post{% if p.is_pinned and p.status == 'published' %} pinned{% endif %}">
+        {% if p.is_pinned and p.status == "published" or p.status == "pending_review" or p.category %}
+        <div class="cm-badges">
+            {% if p.is_pinned and p.status == "published" %}
+                <span class="cm-tag pin"><i class="bi bi-pin-angle-fill"></i> Đã ghim</span>
+            {% endif %}
+            {% if p.category %}
+                <span class="cm-tag">{{ p.get_category_display }}</span>
+            {% endif %}
+            {% if p.status == "pending_review" %}
+                <span class="cm-tag" style="background:#fee2e2;color:#991b1b;">Chờ kiểm duyệt</span>
             {% endif %}
         </div>
-    </div>
-
-{% empty %}
-    <div class="card">
-        {% if post_query %}
-            <p>Không tìm thấy bài viết phù hợp với “{{ post_query }}”.</p>
-
-            <a href="?sort={{ current_sort|default:'new'|urlencode }}{% if selected_category %}&amp;category={{ selected_category|urlencode }}{% endif %}{% if mine_posts %}&amp;mine=1{% endif %}#tab-discussion">
-                Xóa từ khóa tìm kiếm
-            </a>
-        {% else %}
-            <p>Chưa có bài đăng.</p>
         {% endif %}
-    </div>
-{% endfor %}
-{% endif %}
+
+        <div class="cm-row">
+            {% if p.featured_image %}
+                <img src="{{ p.featured_image.url }}" alt="" class="cm-thumb">
+            {% else %}
+                <a class="cm-av" href="{{ p.author.get_absolute_url }}">{{ p.author.get_full_name|default:p.author.email|first|upper }}</a>
+            {% endif %}
+
+            <div style="flex:1; min-width:0;">
+                <h3 class="cm-title"><a href="{% url 'groups:post_detail' group.slug p.pk %}">{{ p.title }}</a></h3>
+                <div class="cm-meta">
+                    <a href="{{ p.author.get_absolute_url }}">{{ p.author }}</a>
+                    · {{ p.created_at|date:"d/m/Y H:i" }}
+                    {% if p.is_edited %} · <em>đã chỉnh sửa</em>{% endif %}
+                </div>
+                <p class="cm-exc">{{ p.body|striptags|truncatewords:28 }}</p>
+            </div>
+        </div>
+
+        <div class="cm-foot">
+            <div class="cm-stats">
+                <span title="Lượt xem"><i class="bi bi-eye"></i> {{ p.view_count }}</span>
+                <a href="{% url 'groups:post_detail' group.slug p.pk %}" title="Thả cảm xúc"><i class="bi bi-hand-thumbs-up"></i> {{ p.like_count }}</a>
+                <a href="{% url 'groups:post_detail' group.slug p.pk %}#comments" title="Bình luận"><i class="bi bi-chat-dots"></i> {{ p.comment_count }}</a>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                {% if is_manager and p.status == "published" %}
+                    <form method="post" action="{% url 'groups:post_pin' group.slug p.pk %}" style="margin:0;">
+                        {% csrf_token %}
+                        {% if p.is_pinned %}
+                            <button type="submit" name="action" value="unpin" class="btn btn-sm btn-outline">Bỏ ghim</button>
+                        {% else %}
+                            <button type="submit" name="action" value="pin" class="btn btn-sm btn-outline">Ghim bài</button>
+                        {% endif %}
+                    </form>
+                {% endif %}
+                <a href="{% url 'groups:post_detail' group.slug p.pk %}" class="cm-more">Xem chi tiết →</a>
+            </div>
+        </div>
+    </article>
+    {% empty %}
+        <div class="cm-box" style="text-align:center; padding:36px; color:var(--color-text-muted);">
+            {% if post_query %}
+                <p style="margin:0 0 10px;">Không tìm thấy bài viết phù hợp với “{{ post_query }}”.</p>
+                <a class="cm-more" href="?sort={{ current_sort|default:'new'|urlencode }}{% if selected_category %}&amp;category={{ selected_category|urlencode }}{% endif %}{% if mine_posts %}&amp;mine=1{% endif %}#tab-discussion">
+                    Xóa từ khóa tìm kiếm
+                </a>
+            {% else %}
+                Chưa có bài đăng.
+            {% endif %}
+        </div>
+    {% endfor %}
+    {% endif %}
 </div>
 
 {% if is_manager %}

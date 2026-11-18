@@ -24,19 +24,137 @@
 {% endblock %}
 
 {% block content %}
-<div class="card">
-    <h1>{% if object %}Sửa bài viết{% else %}Đăng bài{% endif %} trong nhóm "{{ group.name }}"</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        {% include "interactions/_document_formset.html" %}
-        {% if not object and poll_form %}
-        <fieldset style="margin:16px 0;border:1px solid #e0e0e0;border-radius:8px;padding:4px 14px 10px;">
-            <legend style="padding:0 6px;font-weight:600;">📊 Thêm bình chọn (không bắt buộc)</legend>
-            {{ poll_form.as_p }}
-        </fieldset>
-        {% endif %}
-        <button class="btn" type="submit">{% if object %}Lưu{% else %}Đăng{% endif %}</button>
-    </form>
+<div class="composer-container">
+  <div class="composer-layout">
+    <div class="composer-card">
+      <div class="composer-hero">
+        <h2>{% if object %}Sửa bài viết{% else %}Đăng bài trong nhóm{% endif %}</h2>
+        <p>Nhóm: {{ group.name }}</p>
+      </div>
+
+      <div class="composer-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <ul class="composer-errors" style="margin-bottom:14px;">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+
+          <!-- Phân loại bài viết -->
+          <div class="composer-field">
+            <label class="composer-label" for="{{ form.category.id_for_label }}">{{ form.category.label|default:"Phân loại" }}</label>
+            {{ form.category }}
+            {% if form.category.errors %}<ul class="composer-errors">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- Tiêu đề -->
+          <div class="composer-field">
+            <label class="composer-label" for="{{ form.title.id_for_label }}">{{ form.title.label|default:"Tiêu đề" }}</label>
+            {{ form.title }}
+            {% if form.title.errors %}<ul class="composer-errors">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- Nội dung -->
+          <div class="composer-field">
+            <label class="composer-label" for="{{ form.body.id_for_label }}">{{ form.body.label|default:"Nội dung" }}</label>
+            {{ form.body }}
+            {% if form.body.errors %}<ul class="composer-errors">{% for e in form.body.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- Khung Ảnh đại diện (mở khi bấm ở thanh bên) -->
+          <div class="composer-panel" id="panel-image" hidden data-has-initial="{% if object and object.featured_image %}1{% endif %}">
+            <div class="composer-panel-header">
+              <span class="composer-panel-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>Ảnh đại diện bài viết</span></span>
+              <button type="button" class="composer-panel-close" title="Thu gọn" aria-label="Thu gọn">&times;</button>
+            </div>
+            <div class="composer-upload-box">
+              {{ form.featured_image }}
+            </div>
+            {% if form.featured_image.errors %}<ul class="composer-errors">{% for e in form.featured_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- Khung Tài liệu đính kèm (mở khi bấm ở thanh bên) -->
+          {% if document_formset %}
+          <div class="composer-panel" id="panel-doc" hidden data-has-initial="{% if document_formset.initial_form_count > 0 %}1{% endif %}">
+            <div class="composer-panel-header">
+              <span class="composer-panel-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><span>Tài liệu đính kèm</span></span>
+              <button type="button" class="composer-panel-close" title="Thu gọn" aria-label="Thu gọn">&times;</button>
+            </div>
+            {% include "interactions/_document_formset.html" %}
+          </div>
+          {% endif %}
+
+          <!-- Khung Bình chọn (mở khi bấm ở thanh bên) -->
+          {% if not object and poll_form %}
+          <div class="composer-panel" id="panel-poll" hidden>
+            <div class="composer-panel-header">
+              <span class="composer-panel-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Tạo bình chọn</span></span>
+              <button type="button" class="composer-panel-close" title="Thu gọn" aria-label="Thu gọn">&times;</button>
+            </div>
+            {% if poll_form.non_field_errors %}<ul class="composer-errors">{% for e in poll_form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            {% for field in poll_form %}
+              <div class="composer-field" style="margin-bottom:12px;">
+                <label class="composer-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<ul class="composer-errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Nút hành động -->
+          <div class="composer-actions">
+            <a href="{{ group.get_absolute_url }}" class="btn btn-secondary">Hủy</a>
+            <button class="btn" type="submit">{% if object %}Lưu thay đổi{% else %}Đăng bài{% endif %}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <aside class="composer-sidebar" aria-label="Tiện ích nhóm">
+      <!-- 1. Quy tắc & Thông tin nhóm lên đầu -->
+      <div class="composer-side-card">
+        <h3 class="composer-side-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Quy tắc &amp; Thông tin nhóm</span></h3>
+        <ul class="composer-tips-list">
+          <li><span class="composer-tip-bullet">•</span><span>Nhóm: <strong>{{ group.name }}</strong> ({{ group.get_visibility_display }})</span></li>
+          <li><span class="composer-tip-bullet">•</span><span>Trao đổi tôn trọng, đúng chủ đề học tập và hoạt động của nhóm.</span></li>
+          <li><span class="composer-tip-bullet">•</span><span>Không đăng spam, quảng cáo hoặc nội dung vi phạm quy định chung.</span></li>
+        </ul>
+      </div>
+
+      <!-- 2. Thêm vào bài viết của bạn -->
+      <div class="composer-side-card">
+        <h3 class="composer-side-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Thêm vào bài viết của bạn</span></h3>
+        <div class="composer-add-bar">
+          <div class="composer-add-chips">
+            <button type="button" class="composer-chip" data-composer-target="panel-image">
+              <span class="composer-chip-left"><span class="chip-icon"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span><span>Ảnh đại diện</span></span>
+              <span class="composer-chip-status">+ Thêm</span>
+            </button>
+            {% if document_formset %}
+            <button type="button" class="composer-chip" data-composer-target="panel-doc">
+              <span class="composer-chip-left"><span class="chip-icon"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><span>Tài liệu</span></span>
+              <span class="composer-chip-status">+ Thêm</span>
+            </button>
+            {% endif %}
+            {% if not object and poll_form %}
+            <button type="button" class="composer-chip" data-composer-target="panel-poll">
+              <span class="composer-chip-left"><span class="chip-icon"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span>Bình chọn</span></span>
+              <span class="composer-chip-status">+ Thêm</span>
+            </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Mẹo tương tác nhóm -->
+      <div class="composer-side-card">
+        <h3 class="composer-side-title"><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg><span>Mẹo tương tác nhóm</span></h3>
+        <ul class="composer-tips-list">
+          <li><span class="composer-tip-bullet">•</span><span>Gõ <strong>@tên</strong> trong nội dung để gắn thẻ trực tiếp thành viên trong nhóm.</span></li>
+          <li><span class="composer-tip-bullet">•</span><span>Dùng thanh <strong>Thêm vào bài viết</strong> phía trên để chèn ảnh, tài liệu hoặc tạo bình chọn lấy ý kiến nhóm.</span></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
 </div>
 {% endblock %}

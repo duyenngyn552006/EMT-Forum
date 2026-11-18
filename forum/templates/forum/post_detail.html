@@ -257,6 +257,8 @@ document.addEventListener("DOMContentLoaded",()=>{
       const I=[];let t=0;
       P.forEach((n,k)=>{t+=n;if(n>0)I.push(show(k))});
       T.forEach(k=>I.includes(show(k))||I.push(show(k)));
+      const mainBtn=slot.querySelector("#reactionMainBtn");
+      if(mainBtn){const liveCnt=mainBtn.querySelector(".count");t=liveCnt?(+liveCnt.textContent||0):0;}
       bar.style.display="none";
       ico.textContent=reacted?myEmoji:(I[0]||"👍");
       sum.classList.toggle("has-reacted",reacted);
@@ -266,6 +268,13 @@ document.addEventListener("DOMContentLoaded",()=>{
     sum.addEventListener("click",e=>{e.stopPropagation();slot.classList.toggle("open")});
     document.addEventListener("click",()=>slot.classList.remove("open"));
     dock.addEventListener("click",e=>{const btn=e.target.closest("button");if(btn){const em=E.find(x=>btn.textContent.includes(x));if(em){ico.textContent=show(em);sum.classList.add("has-reacted")}}});
+    document.addEventListener("emt:reaction-updated",e=>{
+      const d=e.detail||{};
+      tot.textContent=d.count||0;
+      ico.textContent=d.liked?(d.emoji||"👍"):"👍";
+      sum.classList.toggle("has-reacted",!!d.liked);
+      slot.classList.remove("open");
+    });
 
     const o={childList:true,subtree:true,characterData:true},ob=new MutationObserver(()=>{ob.disconnect();sync();ob.observe(slot,o)});
     sync();ob.observe(slot,o);
@@ -298,7 +307,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         count=+(h?.textContent.match(/\d+/)?.[0]||all.length);
   $("pdCmtCount").textContent=$("pdCmtHeadCount").textContent=count;
 
-  const ICONS={"Trả lời":"chat","Sửa":"pencil","Xóa":"trash"};
+  const ICONS={"Trả lời":"chat","Báo cáo":"flag","Sửa":"pencil","Xóa":"trash"};
   mount.querySelectorAll("a,button").forEach(el=>{
     const txt=el.textContent.trim();
     if(!ICONS[txt])return;
@@ -312,7 +321,9 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(top.length)top.forEach(e=>list.appendChild(e));
   else if(!count){
     const em=mk("div","pd-cmt-empty");
-    em.innerHTML=`<i class="bi bi-chat-dots"></i><strong>Chưa có bình luận nào</strong><span>Hãy là người đầu tiên chia sẻ suy nghĩ của mình!</span>`;
+    const loginLink=mount.querySelector('a[href*="login"]');
+    const sub=form?"Hãy là người đầu tiên chia sẻ suy nghĩ của mình!":(loginLink?`<a href="${loginLink.getAttribute("href")}">Đăng nhập</a> để bình luận.`:"Đăng nhập để bình luận.");
+    em.innerHTML=`<i class="bi bi-chat-dots"></i><strong>Chưa có bình luận nào</strong><span>${sub}</span>`;
     list.appendChild(em);
   }
 });
