@@ -1,5 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Vô hiệu hóa nhóm{% endblock %}
+{% block title %}Vô hiệu hóa nhóm — {{ group.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="group-breadcrumb" aria-label="Đường dẫn trang">
+    <a href="{% url 'home' %}">Trang chủ</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{% url 'groups:list' %}">Nhóm</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{{ group.get_absolute_url }}">{{ group.name }}</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <span aria-current="page">Vô hiệu hóa nhóm</span>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <h1>Vô hiệu hóa nhóm "{{ group.name }}"?</h1>

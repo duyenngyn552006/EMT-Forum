@@ -1,15 +1,27 @@
 {% extends "groups/group_layout.html" %}
-{% block title %}{{ post.title }} | {{ post.group.name }}{% endblock %}
+
+{% block title %}{{ post.title }} — {{ post.group.name }}{% endblock %}
+
 {% block extra_head %}
-{{ block.super }}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="group-breadcrumb" aria-label="Đường dẫn trang">
+    <a href="{% url 'home' %}">Trang chủ</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{% url 'groups:list' %}">Nhóm</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{{ post.group.get_absolute_url }}">{{ post.group.name }}</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <span aria-current="page">{{ post.title }}</span>
+</nav>
 {% endblock %}
 {% block group_content %}
-<nav class="pd-breadcrumb">
-  <a href="{% url 'groups:detail' post.group.slug %}"><i class="bi bi-people"></i> {{ post.group.name }}</a>
-  <span class="pd-sep">/</span>
-  <span class="pd-curr">Chi tiết bài viết</span>
-</nav>
 
 <article class="pd-card">
   <div class="pd-top-bar">

@@ -1,5 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Xóa bài viết{% endblock %}
+{% block title %}Xóa bài viết — {{ post.title }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="group-breadcrumb" aria-label="Đường dẫn trang">
+    <a href="{% url 'home' %}">Trang chủ</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{% url 'groups:list' %}">Nhóm</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{{ group.get_absolute_url }}">{{ group.name }}</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{% url 'groups:post_detail' group.slug post.pk %}">{{ post.title }}</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <span aria-current="page">Xóa bài viết</span>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <h1>Xác nhận xóa bài viết "{{ post.title }}"?</h1>

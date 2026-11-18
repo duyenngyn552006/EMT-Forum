@@ -197,6 +197,7 @@
     </a>
 </div>
     {% for p in posts %}
+
     <article class="cm-box cm-post{% if p.is_pinned and p.status == 'published' %} pinned{% endif %}">
         {% if p.is_pinned and p.status == "published" or p.status == "pending_review" or p.category %}
         <div class="cm-badges">
