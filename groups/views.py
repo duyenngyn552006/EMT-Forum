@@ -420,6 +420,9 @@ def group_post_pin(request, slug, pk):
     else:
         messages.success(request, "Đã bỏ ghim bài viết.")
 
+    next_url = request.POST.get("next", "")
+    if next_url and next_url.startswith("/"):
+        return redirect(next_url)
     return redirect(group.get_absolute_url())
 
 @login_required
@@ -706,6 +709,7 @@ class GroupPostDetailView(DetailView):
     def get_context_data(self, **kwargs):
         from django.contrib.contenttypes.models import ContentType
 
+        from interactions.follows import is_following
         from interactions.utils import get_interaction_context, get_top_level_comments
 
         ctx = super().get_context_data(**kwargs)
@@ -713,6 +717,8 @@ class GroupPostDetailView(DetailView):
         ctx["model_key"] = "grouppost"
         ctx["comments"] = get_top_level_comments(content_type, self.object.pk, viewer=self.request.user)
         ctx.update(get_interaction_context(self.request.user, self.object))
+        ctx["is_manager"] = _is_group_manager(self.request.user, self.object.group)
+        ctx["is_following_post"] = is_following(self.request.user, self.object)
 
         from .mentions import build_mention_feed
 

@@ -10,6 +10,10 @@ register = template.Library()
 _ACTIVE_BY_URL = {
     "dashboard": {"overview": "dashboard"},
     "accounts": {"user_list": "users", "assign_role": "users", "toggle_active": "users"},
+    "forum": {
+        "category_list": "categories", "category_create": "categories",
+        "category_edit": "categories", "category_delete": "categories",
+    },
     "moderation": {
         "report_list": "reports", "report_resolve": "reports",
         "pending_content_list": "content", "approve_content": "content", "reject_content": "content",

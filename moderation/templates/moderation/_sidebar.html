@@ -34,6 +34,10 @@
         </a>
 
         <p class="mod-side-label">Công cụ</p>
+        <a class="mod-side-link{% if active == 'categories' %} active{% endif %}" href="{% url 'forum:category_list' %}"{% if active == 'categories' %} aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>Quản lý chuyên mục</span>
+        </a>
         <a class="mod-side-link{% if active == 'keywords' %} active{% endif %}" href="{% url 'moderation:keyword_list' %}"{% if active == 'keywords' %} aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
             <span>Từ khóa nhạy cảm</span>

@@ -9,6 +9,7 @@ urlpatterns = [
     path("new/", views.announcement_create, name="create"),
     path("<int:pk>/", views.AnnouncementDetailView.as_view(), name="detail"),
     path("<int:pk>/edit/", views.announcement_edit, name="edit"),
+    path("<int:pk>/delete/", views.announcement_delete, name="delete"),
     path("<int:pk>/pin/", views.announcement_pin, name="pin"),
     path("<int:pk>/unpin/", views.announcement_unpin, name="unpin"),
     path("<int:pk>/register/", views.register_event, name="register_event"),

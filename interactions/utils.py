@@ -27,6 +27,8 @@ def resolve_target(model_key, object_id):
 FOLLOW_ALLOWED_MODELS = {
     "category": ("forum", "category"),
     "forumpost": ("forum", "forumpost"),
+    "grouppost": ("groups", "grouppost"),
+    "announcement": ("announcements", "announcement"),
 }
 
 
