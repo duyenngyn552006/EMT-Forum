@@ -1,5 +1,21 @@
 {% extends "groups/group_layout.html" %}
-{% block title %}{{ post.title }}{% endblock %}
+{% block title %}{{ post.title }} — {{ post.group.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="group-breadcrumb" aria-label="Đường dẫn trang">
+    <a href="{% url 'home' %}">Trang chủ</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{% url 'groups:list' %}">Nhóm</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{{ post.group.get_absolute_url }}">{{ post.group.name }}</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <span aria-current="page">{{ post.title }}</span>
+</nav>
+{% endblock %}
+
 {% block group_content %}
 <div class="card">
     <h1>{{ post.title }}</h1>

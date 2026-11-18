@@ -1,6 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Đăng bài trong nhóm{% endblock %}
+{% block title %}{% if object %}Sửa bài viết — {{ object.title }}{% else %}Đăng bài mới — {{ group.name }}{% endif %}{% endblock %}
 {% block extra_head %}{{ form.media }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="group-breadcrumb" aria-label="Đường dẫn trang">
+    <a href="{% url 'home' %}">Trang chủ</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{% url 'groups:list' %}">Nhóm</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{{ group.get_absolute_url }}">{{ group.name }}</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    {% if object %}
+        <a href="{% url 'groups:post_detail' group.slug object.pk %}">{{ object.title }}</a>
+        <span class="separator" aria-hidden="true">›</span>
+        <span aria-current="page">Sửa bài viết</span>
+    {% else %}
+        <span aria-current="page">Đăng bài mới</span>
+    {% endif %}
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <h1>{% if object %}Sửa bài viết{% else %}Đăng bài{% endif %} trong nhóm "{{ group.name }}"</h1>

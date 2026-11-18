@@ -1,5 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Từ chối yêu cầu tham gia nhóm{% endblock %}
+{% block title %}Từ chối yêu cầu tham gia — {{ group.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="group-breadcrumb" aria-label="Đường dẫn trang">
+    <a href="{% url 'home' %}">Trang chủ</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{% url 'groups:list' %}">Nhóm</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <a href="{{ group.get_absolute_url }}">{{ group.name }}</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    <span aria-current="page">Từ chối yêu cầu tham gia</span>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <h1>Từ chối yêu cầu tham gia nhóm "{{ group.name }}" của {{ join_request.user }}</h1>

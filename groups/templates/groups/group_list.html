@@ -2,6 +2,21 @@
 
 {% block title %}{% if mine_only %}Nhóm của tôi{% else %}Danh sách nhóm{% endif %}{% endblock %}
 
+{% block breadcrumb %}
+<nav class="group-breadcrumb" aria-label="Đường dẫn trang">
+    <a href="{% url 'home' %}">Trang chủ</a>
+    <span class="separator" aria-hidden="true">›</span>
+
+    {% if mine_only %}
+        <a href="{% url 'groups:list' %}">Nhóm</a>
+        <span class="separator" aria-hidden="true">›</span>
+        <span aria-current="page">Nhóm của tôi</span>
+    {% else %}
+        <span aria-current="page">Nhóm</span>
+    {% endif %}
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <h1>{% if mine_only %}Nhóm của tôi{% else %}Danh sách nhóm{% endif %}</h1>
