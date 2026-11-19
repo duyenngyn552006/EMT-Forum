@@ -205,7 +205,7 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, _DocumentFormsetMi
 
     def test_func(self):
         post = self.get_object()
-        return self.request.user == post.author or self.request.user.role == User.Role.STAFF
+        return self.request.user == post.author
 
     def save_post(self, form):
         post, keyword = services.update_post(
@@ -238,7 +238,7 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 def _can_accept_answer(user, post):
     """Nguoi hoi, giang vien, hoac Giao vu Khoa chon duoc cau tra loi."""
     return user.is_authenticated and (
-        user == post.author or user.role in (User.Role.LECTURER, User.Role.STAFF)
+        user == post.author or user.role in (User.Role.LECTURER, User.Role.STAFF, User.Role.BCH )
     )
 
 
@@ -250,7 +250,7 @@ def accept_answer(request, pk, comment_id):
         messages.error(request, "Chỉ bài đăng dạng câu hỏi mới chọn được câu trả lời.")
         return redirect(post.get_absolute_url())
     if not _can_accept_answer(request.user, post):
-        messages.error(request, "Chỉ người đặt câu hỏi, giảng viên hoặc Giáo vụ Khoa mới chọn được câu trả lời.")
+        messages.error(request, "Chỉ người đặt câu hỏi, giảng viên, BCH hoặc Giáo vụ Khoa mới chọn được câu trả lời.")
         return redirect(post.get_absolute_url())
     comment = get_object_or_404(
         Comment, pk=comment_id, content_type=ContentType.objects.get_for_model(ForumPost), object_id=post.pk,

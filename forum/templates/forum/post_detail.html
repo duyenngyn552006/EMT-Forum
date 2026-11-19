@@ -137,8 +137,10 @@
           <div class="post-menu-wrapper">
             <button type="button" class="pd-dots" onclick="togglePostMenu(event)" aria-label="Tùy chọn"><i class="bi bi-three-dots"></i></button>
             <div class="post-menu-dropdown" id="postMenuDropdown" hidden>
-              {% if user == post.author or user.role == "staff" %}
+              {% if user == post.author %}
               <a href="{% url 'forum:post_edit' post.pk %}"><i class="bi bi-pencil"></i> Sửa</a>
+              {% endif %}
+              {% if user == post.author or user.role == "staff" %}
               <a class="danger-text" href="#" data-url="{% url 'forum:post_delete' post.pk %}" data-msg='Xác nhận xóa bài viết "{{ post.title|escapejs }}"?' onclick="event.preventDefault();showDeleteConfirm(event,this.dataset.url,this.dataset.msg)"><i class="bi bi-trash"></i> Xóa</a>
               {% endif %}
               {% if user.role == "lecturer" or user.role == "bch" or user.role == "staff" %}

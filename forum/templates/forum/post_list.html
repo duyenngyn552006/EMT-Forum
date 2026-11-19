@@ -85,7 +85,7 @@
     <div class="cm-box cm-bar">
       <div class="cm-tabs">
         <a href="?sort=new{% if current_mine %}&mine=1{% endif %}" class="{% if current_sort != 'activity' and not current_kind %}active{% endif %}"><i class="bi bi-fire"></i> Mới nhất</a>
-        <a href="?sort=activity{% if current_mine %}&mine=1{% endif %}" class="{% if current_sort == 'activity' %}active{% endif %}"><i class="bi bi-star"></i> Hoạt dộng gần nhất</a>
+        <a href="?sort=activity{% if current_mine %}&mine=1{% endif %}" class="{% if current_sort == 'activity' %}active{% endif %}"><i class="bi bi-star"></i> Hoạt động gần nhất</a>
         <a href="?kind=question{% if current_mine %}&mine=1{% endif %}" class="{% if current_kind == 'question' %}active{% endif %}"><i class="bi bi-question-circle"></i> Hỏi đáp</a>
         <a href="?kind=unsolved{% if current_mine %}&mine=1{% endif %}" class="{% if current_kind == 'unsolved' %}active{% endif %}"><i class="bi bi-hourglass-split"></i> Chưa giải đáp</a>
       </div>
