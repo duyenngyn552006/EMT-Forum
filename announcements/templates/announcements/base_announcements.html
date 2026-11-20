@@ -37,6 +37,7 @@
 {% endblock %}
 
 {% block content %}
+{% block announcement_body %}
 <div class="cm-grid">
   <aside class="cm-box cm-side" aria-label="Điều hướng thông báo">
     {% if user.is_authenticated and user.is_superuser or user.is_authenticated and user.role in "bch,staff,lecturer" %}
@@ -97,4 +98,5 @@
     {% block announcement_content %}{% endblock %}
   </div>
 </div>
+{% endblock announcement_body %}
 {% endblock %}
