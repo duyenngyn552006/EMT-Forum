@@ -29,7 +29,7 @@ Không cần cài đặt gì thêm — Django dùng file `db.sqlite3` tạo tự
 
 ### 3. Biến môi trường
 
-File `.env` đã có sẵn ở gốc dự án (copy mẫu từ `.env.example` nếu cần tạo lại). Các giá trị
+File `.env` đã có sẵn ở gốc dự án (copy mẫu từ `.env` nếu cần tạo lại). Các giá trị
 **chưa chốt chính thức** (xem thêm mục "Chưa xác định" trong `CLAUDE.md`):
 
 - `ALLOWED_SIGNUP_EMAIL_DOMAINS` — domain email được phép đăng ký (đã chốt `due.udn.vn`).
